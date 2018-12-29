@@ -10,12 +10,12 @@ class ParserTop(parser.Parser):
     def parse_content(self, soup):
         """ Parse content and return parameters if exist
         :param soup:
-        :return: Dict of parameters
-            'kaisai' : 開催情報
-            'shutuba' : 出馬表
-            'odds' : オッズ
-            'haraimodoshi' : レース結果
-            'tokubetu' : 特別レース登録馬
+        :return: Dict of parameters(URL and Post parameter)
+            'kaisai': 開催情報
+            'shutuba': 出馬表
+            'odds': オッズ
+            'haraimodoshi': レース結果
+            'tokubetu': 特別レース登録馬
 
         """
         param_list = {}
@@ -36,22 +36,22 @@ class ParserTop(parser.Parser):
                     params = util.Util.parse_func_params(anchor['onclick'])
                     if params[0].endswith('accessI.html'):
                         # 開催情報
-                        param_list['kaisai'] = params[1]
+                        param_list['kaisai'] = util.Util.format_params(params)
                     elif params[0].endswith('accessD.html'):
                         # 出馬表
-                        param_list['shutuba'] = params[1]
+                        param_list['shutuba'] = util.Util.format_params(params)
                     elif params[0].endswith('accessO.html'):
                         # オッズ
-                        param_list['odds'] = params[1]
+                        param_list['odds'] = util.Util.format_params(params)
                     elif params[0].endswith('accessH.html'):
                         # print("払い戻し : {}".format(params[1]))
-                        param_list['haraimodoshi'] = params[1]
+                        param_list['haraimodoshi'] = util.Util.format_params(params)
                     elif params[0].endswith('accessS.html'):
                         # print("レース結果 : {}".format(params[1]))
-                        param_list['race'] = params[1]
+                        param_list['race'] = util.Util.format_params(params)
                     elif params[0].endswith('accessT.html'):
                         # print("特別レース登録馬 : {}".format(params[1]))
-                        param_list['tokubetu'] = params[1]
+                        param_list['tokubetu'] = util.Util.format_params(params)
                 except parser.ParseError as per:
                     pass
 

@@ -18,7 +18,7 @@ class ParserDenTop(parser.ParserPost):
                 'index': 開催回数
                 'day': 開催日（何日目）
                 'place': 競馬場
-                'param': Post parameter
+                'params': URL and Post parameter
 
         """
         soup_area = soup.find('div', attrs = {'id':'contentsBody'})
@@ -38,7 +38,7 @@ class ParserDenTop(parser.ParserPost):
                 soup_anchor = soup_kaisai.find('a')
                 if soup_anchor.has_attr('onclick'):
                     try:
-                        param = util.Util.parse_func_params(soup_anchor['onclick'])
+                        params = util.Util.parse_func_params(soup_anchor['onclick'])
                     except parser.ParseError as per:
                         pass
 
@@ -50,7 +50,7 @@ class ParserDenTop(parser.ParserPost):
                 kaisai_info_day['index'] = kaisai_param[0]
                 kaisai_info_day['day'] = kaisai_param[1]
                 kaisai_info_day['place'] = kaisai_param[2]
-                kaisai_info_day['param'] = param
+                kaisai_info_day['param'] = util.Util.format_params(params)
 
                 kaisai_info['kaisai'].append(kaisai_info_day)
 

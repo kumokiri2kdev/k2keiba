@@ -36,3 +36,7 @@ class Util:
             raise ValueError
 
         return kaisuu, nichisuu, place
+
+    @classmethod
+    def format_params(cls, params):
+        return {'url': params[0], 'param': params[1]}
