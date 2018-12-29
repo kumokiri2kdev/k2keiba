@@ -43,3 +43,7 @@ class Parser:
         print("Base Class parse_content must not  be called")
 
 
+class ParserPost(Parser):
+    def __init__(self, path, param):
+        param = 'cname=' + param
+        super(ParserPost,self).__init__(path, data=param)
