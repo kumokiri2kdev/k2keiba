@@ -6,8 +6,6 @@ from . import util
 class ParserDenTop(parser.ParserPost):
     def __init__(self, path, param):
         super().__init__(path, param)
-        self.kaisai_list = {}
-        self.den_list = {'date_list': self.kaisai_list}
 
     def parse_content(self, soup):
         """ Parse content and return parameters if exist
