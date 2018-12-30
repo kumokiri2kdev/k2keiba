@@ -22,3 +22,6 @@ if __name__ == '__main__':
 
             for race in result['races']:
                 logger.info(' ' * 2 + '{}レース {} : {}'.format(race['index'], race['name'], race['param']['param']))
+
+        if 'win5' in kaisai:
+            logger.info('WIN5 : ' + kaisai['win5'][1])

@@ -58,6 +58,17 @@ class ParserDenTop(parser.ParserPost):
 
             kaisai_list.append(kaisai_info)
 
+            soup_win5 = soup_day.find('ul', attrs={'class': 'win5'})
+            soup_anchor = soup_win5.find('a')
+            if soup_anchor is not None:
+                if soup_anchor.has_attr('onclick'):
+                    try:
+                        params = util.Util.parse_func_params(soup_anchor['onclick'])
+                        kaisai_info['win5'] = params
+                    except parser.ParseError as per:
+                        logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+
         return kaisai_list
 
 
