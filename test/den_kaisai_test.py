@@ -18,4 +18,4 @@ if __name__ == '__main__':
             logger.info(' {}回{}{}日'.format(result['index'], result['place'], result['nichisuu']))
 
             for race in result['races']:
-                logger.info(' ' * 2 + '{}レース {}'.format(race['index'], race['name']))
+                logger.info(' ' * 2 + '{}レース {} : {}'.format(race['index'], race['name'], race['param']['param']))

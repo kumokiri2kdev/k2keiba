@@ -1,8 +1,8 @@
 """ JRA Page Top Parser """
 from logging import getLogger
 
-from . import parser
 from . import util
+from . import parser
 
 logger = getLogger(__name__)
 

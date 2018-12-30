@@ -1,10 +1,7 @@
 """ Utilities for k2k_jra """
 import re
-import logging.config
 
 from . import parser
-
-logging.config.fileConfig('../assets/logging.ini')
 
 class Util:
     @classmethod
@@ -54,3 +51,41 @@ class Util:
 
         return date[0], weekday[0].replace("（", "").replace("）", ""), int(kaisuu[0].replace("回", "")), \
                place[0], int(day[0].replace("日", ""))
+
+    @classmethod
+    def parse_course_distance(cls, str):
+        distance = int(re.sub(r'[^0-9]', '', str))
+        course = re.sub(r'（|）','', re.search(r'（.*）', str).group(0))
+
+        return distance, course
+
+    @classmethod
+    def parse_odds(cls, str):
+        try:
+            odds = float(re.search(r'.*[0-9]\(', str).group(0).replace('(',''))
+            odds_rank = int(re.search(r'[0-9]', re.search(r'\(.*\)', str).group(0)).group(0))
+        except:
+            raise ValueError
+
+        return odds, odds_rank
+
+    @classmethod
+    def parse_weight(cls, str):
+        try:
+            weight = int(re.search(r'[0-9]*', str).group(0))
+            try:
+                weight_diff = int(re.search(r'\(.*\)', str).group(0).replace('(','').replace(')',''))
+            except:
+                weight_diff = 0
+        except:
+            raise ValueError
+
+        return weight, weight_diff
+
+    @classmethod
+    def parse_age(cls, str):
+        str = Util.trim_clean(str)
+        age = int(re.sub(r'[^0-9]', '', str))
+        sex, hair = (re.sub(r'[0-9]','', str).split('/'))
+
+        return age, sex, hair

@@ -1,11 +1,13 @@
 """ Parser Base Class """
-from logging import getLogger
+from logging import config, getLogger, INFO
 import urllib.request
 
 from bs4 import BeautifulSoup
 
 
 JRA_BASE_URL = 'http://www.jra.go.jp'
+
+config.fileConfig('../assets/logging.ini')
 
 logger = getLogger(__name__)
 

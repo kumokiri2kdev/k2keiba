@@ -1,8 +1,8 @@
 """ JRA Den Page Top Parser """
 from logging import getLogger
 
-from . import parser
 from . import util
+from . import parser
 
 
 logger = getLogger(__name__)
@@ -136,3 +136,159 @@ class ParserDenKaisai(parser.ParserPost):
             kaisai_list['races'].append(race)
 
         return kaisai_list
+
+
+class ParserDenRace(parser.ParserPost):
+    def __init__(self, path, param):
+        super().__init__(path, param)
+
+    def parse_content(self, soup):
+        """ Parse content and return race den info
+                :param soup:
+                :return:Race Den info
+                    'date': 日付
+                    'weekday': 曜日
+                    'index': 開催回数
+                    'nichisuu': 開催日数
+                    'place': 場所
+                    'departure': 発走時刻
+                    'category': レースカテゴリ
+                    'class': レースクラス
+                    'rule': レースルール
+                    'weight': 斤量条件
+                    'distance': 距離
+                    'course': コース
+                """
+
+        race = {}
+
+        soup_area = soup.find('div', attrs={'id': 'contentsBody'})
+        soup_syutsuba = soup_area.find('div', attrs={'id': 'syutsuba'})
+        soup_date = soup_syutsuba.find('div', attrs={'class': 'date'})
+        date, weekday, index, place, nichisuu = util.Util.parse_kaisai_date(soup_date.getText())
+
+        race['date'] = date
+        race['weekday'] = weekday
+        race['index'] = index
+        race['place'] = place
+        race['nichisuu'] = nichisuu
+
+        race['departure'] = soup_syutsuba.find('div', attrs={'class': 'time'}).find('strong').getText()
+
+        race['index'] = int(soup_syutsuba.find('div', attrs={'class': 'race_number'}).
+                         find('img')['alt'].replace('レース', ''))
+
+        soup_name = soup_syutsuba.find('span', attrs={'class': 'race_name'})
+        race['name'] = util.Util.trim_clean(soup_name.getText())
+
+        soup_grade = soup_name.find('span', attrs={'class': 'grade_icon'})
+        if soup_grade is None:
+            logger.info('None Grade Race')
+        else:
+            race['grade'] = soup_grade.find('img')['alt']
+
+
+        race['category'] = soup_syutsuba.find('div', attrs={'class': 'category'}).getText()
+        race['class'] = soup_syutsuba.find('div', attrs={'class': 'class'}).getText()
+        race['rule'] = soup_syutsuba.find('div', attrs={'class': 'rule'}).getText()
+        race['weight'] = soup_syutsuba.find('div', attrs={'class': 'weight'}).getText()
+        distance, course = \
+            util.Util.parse_course_distance(soup_syutsuba.find('div', attrs={'class': 'course'}).getText())
+        race['distance'] = distance
+        race['course'] = course
+
+        soup_links = soup_syutsuba.find('div', attrs={'id': 'race_related_link'})
+
+        soup_result_link = soup_links.find('li', attrs={'class': 'result'})
+        if soup_result_link is not None:
+            soup_anchor = soup_result_link.find('a')
+            if soup_anchor is not None and soup_anchor.has_attr('onclick'):
+                try:
+                    race['result'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                except parser.ParseError as per:
+                    logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+
+        soup_odds_link = soup_links.find('li', attrs={'class': 'odds'})
+        if soup_odds_link is not None:
+            soup_anchor = soup_odds_link.find('a')
+            if soup_anchor.has_attr('onclick'):
+                try:
+                    race['odds'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                except parser.ParseError as per:
+                    logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+        soup_tbody = soup_syutsuba.find('tbody')
+        soup_trs = soup_tbody.find_all('tr')
+
+        race['hourses'] = []
+        for soup_tr in soup_trs:
+            hourse = {}
+            soup_name = soup_tr.find('div', attrs={'class': 'name'})
+            hourse['name'] = util.Util.trim_clean(soup_name.getText())
+            soup_anchor = soup_name.find('a')
+            if soup_anchor is not None and soup_anchor.has_attr('onclick'):
+                try:
+                    hourse['url'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                except parser.ParseError as per:
+                    logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+            try:
+                odds, odds_rank = util.Util.parse_odds(soup_tr.find('div', attrs={'class': 'odds'}).getText())
+                hourse['odds'] = odds
+                hourse['odds_rank'] = odds_rank
+            except:
+                pass
+
+            try:
+                soup_weight = soup_tr.find('div', attrs={'class': 'weight'})
+                weight, weight_diff = util.Util.parse_weight(soup_weight.getText())
+                hourse['weight'] = weight
+                hourse['weight_diff'] = weight_diff
+            except:
+                pass
+
+            owner = soup_tr.find('p', attrs={'class': 'owner'}).getText()
+            hourse['owner'] = owner
+
+            soup_trainer = soup_tr.find('p', attrs={'class': 'trainer'})
+            trainer = {}
+            trainer['name'] = util.Util.trim_clean(soup_trainer.getText())
+            soup_anchor = soup_trainer.find('a')
+            if soup_anchor is not None and soup_anchor.has_attr('onclick'):
+                try:
+                    trainer['url'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                except parser.ParseError as per:
+                    logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+            hourse['trainer'] = trainer
+
+            hourse['sire'] = util.Util.trim_clean(soup_tr.find('li', attrs={'class': 'sire'}).getText()).replace('父：','')
+            mare_info = util.Util.trim_clean(soup_tr.find('li', attrs={'class': 'mare'}).getText()).split(' ')
+            hourse['mare'] = mare_info[0].replace('母：','')
+            hourse['bms'] = mare_info[-1].replace('(母の父：','').replace(')','')
+
+            hourse['hande'] = float(util.Util.trim_clean(
+                soup_tr.find('p', attrs={'class': 'weight'}).getText()).replace('kg',''))
+
+            soup_jockey = soup_tr.find('p', attrs={'class': 'jockey'})
+            jockey = {}
+            jockey['name'] = util.Util.trim_clean(soup_jockey.getText())
+            soup_anchor = soup_jockey.find('a')
+            if soup_anchor is not None and soup_anchor.has_attr('onclick'):
+                try:
+                    jockey['url'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                except parser.ParseError as per:
+                    logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+            hourse['jockey'] = jockey
+
+            age, sex, hair = util.Util.parse_age(soup_tr.find('p', attrs={'class': 'age'}).getText())
+            hourse['age'] = age
+            hourse['sex'] = sex
+            hourse['hair'] = hair
+
+            race['hourses'].append(hourse)
+
+
+        return race
