@@ -1,14 +1,15 @@
 """ Test Code for ParserTop class. """
-from logging import getLogger, INFO
+import sys
+import logging
+sys.path.append('../')
 
-import parser as pr
-
+import k2kparser.top as pt
 
 if __name__ == '__main__':
-    logger = getLogger(__name__)
-    logger.setLevel(INFO)
+    logging.config.fileConfig('logging.ini',disable_existing_loggers=False )
+    logger = logging.getLogger(__name__)
 
-    p = pr.ParserTop()
+    p = pt.ParserTop()
     params = p.parse()
 
     list_to_be_checked = (

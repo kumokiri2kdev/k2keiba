@@ -1,5 +1,5 @@
 """ Parser Base Class """
-from logging import config, getLogger, INFO
+import logging
 import urllib.request
 
 from bs4 import BeautifulSoup
@@ -7,9 +7,8 @@ from bs4 import BeautifulSoup
 
 JRA_BASE_URL = 'http://www.jra.go.jp'
 
-config.fileConfig('../assets/logging.ini')
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class ParseError(Exception):
 	def __init__(self):

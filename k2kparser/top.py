@@ -1,10 +1,11 @@
 """ JRA Page Top Parser """
-from logging import getLogger
+import logging
 
 from . import util
 from . import parser
 
-logger = getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 class ParserTop(parser.Parser):
     def __init__(self):

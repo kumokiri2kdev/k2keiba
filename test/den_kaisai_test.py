@@ -1,17 +1,20 @@
-from logging import getLogger, INFO
+import sys
+import logging
+sys.path.append('../')
 
-import parser as pr
+import k2kparser.den as pd
+
 
 if __name__ == '__main__':
-    logger = getLogger(__name__)
-    logger.setLevel(INFO)
+    logging.config.fileConfig('logging.ini',disable_existing_loggers=False )
+    logger = logging.getLogger(__name__)
 
-    p = pr.ParserDenTop('/JRADB/accessD.html', 'pw01dli00/F3')
+    p = pd.ParserDenTop('/JRADB/accessD.html', 'pw01dli00/F3')
     kaisai_list = p.parse()
 
     for kaisai in kaisai_list:
         for day in kaisai['kaisai']:
-            pk = pr.ParserDenKaisai(day['param']['url'], day['param']['param'])
+            pk = pd.ParserDenKaisai(day['param']['url'], day['param']['param'])
             result = pk.parse()
 
             logger.info('日付 : '+ result['date'])

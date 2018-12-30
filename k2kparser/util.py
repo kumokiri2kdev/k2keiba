@@ -1,7 +1,33 @@
 """ Utilities for k2k_jra """
 import re
+import logging.config
 
 from . import parser
+
+
+logging.config.dictConfig({
+    'version': 1,
+    'formatters': {
+        'k2k_formatter': {
+            'format': '[%(filename)s:%(lineno)03d] %(message)s'
+        },
+    },
+    'handlers': {
+        'k2k_handler': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'k2k_formatter'
+        }
+    },
+    'loggers': {
+        'k2kparser': {
+            'handlers': ['k2k_handler'],
+            'level': logging.INFO,
+            'propagate': 0
+        }
+    }
+})
+
+logger = logging.getLogger(__name__)
 
 class Util:
     @classmethod
