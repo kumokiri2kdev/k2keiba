@@ -1,11 +1,13 @@
 """ Parser Base Class """
-import os
+from logging import getLogger
+import urllib.request
 
 from bs4 import BeautifulSoup
-import urllib.request
+
 
 JRA_BASE_URL = 'http://www.jra.go.jp'
 
+logger = getLogger(__name__)
 
 class ParseError(Exception):
 	def __init__(self):
@@ -40,7 +42,7 @@ class Parser:
         return self.parse_html(response_body)
 
     def parse_content(self, soup):
-        print("Base Class parse_content must not  be called")
+        logger.error("Base Class parse_content must not  be called")
 
 
 class ParserPost(Parser):

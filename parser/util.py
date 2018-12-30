@@ -1,8 +1,10 @@
 """ Utilities for k2k_jra """
 import re
+import logging.config
 
 from . import parser
 
+logging.config.fileConfig('../assets/logging.ini')
 
 class Util:
     @classmethod

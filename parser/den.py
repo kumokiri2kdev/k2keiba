@@ -1,7 +1,11 @@
 """ JRA Den Page Top Parser """
+from logging import getLogger
 
 from . import parser
 from . import util
+
+
+logger = getLogger(__name__)
 
 class ParserDenTop(parser.ParserPost):
     def __init__(self, path, param):
@@ -38,12 +42,12 @@ class ParserDenTop(parser.ParserPost):
                     try:
                         params = util.Util.parse_func_params(soup_anchor['onclick'])
                     except parser.ParseError as per:
-                        pass
+                        logger.info('Anchor parse error: ' + soup_anchor.getText())
 
                 try:
                     kaisai_param = util.Util.parse_kaisai(soup_kaisai.getText())
                 except ValueError:
-                    pass
+                    logger.info('parse_kaisai error: ' + soup_kaisai.getText())
 
                 kaisai_info_day['index'] = kaisai_param[0]
                 kaisai_info_day['day'] = kaisai_param[1]
@@ -116,7 +120,7 @@ class ParserDenKaisai(parser.ParserPost):
                 try:
                     params = util.Util.parse_func_params(soup_anchor['onclick'])
                 except parser.ParseError as per:
-                    pass
+                    logger.info('Anchor parse error: ' + soup_anchor.getText())
 
             soup_img = soup_anchor.find('img')
             race_index = int(soup_img['alt'].replace('レース', ''))

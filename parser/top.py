@@ -1,7 +1,10 @@
 """ JRA Page Top Parser """
+from logging import getLogger
 
 from . import parser
 from . import util
+
+logger = getLogger(__name__)
 
 class ParserTop(parser.Parser):
     def __init__(self):
@@ -52,7 +55,9 @@ class ParserTop(parser.Parser):
                     elif params[0].endswith('accessT.html'):
                         # print("特別レース登録馬 : {}".format(params[1]))
                         param_list['tokubetu'] = util.Util.format_params(params)
+                    else:
+                        logger.warning('Unknown URL: ' + params[0])
                 except parser.ParseError as per:
-                    pass
+                    logger.info('Anchor parse error: ' + anchor.getText())
 
         return param_list
