@@ -54,7 +54,7 @@ class Util:
             kaisuu = int(re.sub(r'回', '', searched[0]))
             searched = re.search(r'[0-9]日', str)
             nichisuu = int(re.sub(r'日', '', searched[0]))
-            place = re.sub(r'[0-9]回', '', str)
+            place = re.sub(r'[0-9]回', '', str).lstrip('\n')
             place = re.sub(r'[0-9]日', '', place).split('\n')[0]
 
         except:
