@@ -10,6 +10,14 @@ logger = logging.getLogger(__name__)
 
 class ParserResultTop(parser.ParserPost):
 
+    def parse_days(self, soup):
+        soup_area = soup.find('div', attrs = {'id':'contentsBody'})
+        soup_day_area = soup_area.find('div', attrs = {'id':'main'})
+        soup_days = soup_day_area.find_all('div', attrs = {'class':'panel'})
+
+        return soup_days
+
+
     def parse_content(self, soup):
         """ Parse content and return parameters if exist
         :param soup:
@@ -22,15 +30,16 @@ class ParserResultTop(parser.ParserPost):
                 'params': URL and Post parameter
 
         """
-        soup_area = soup.find('div', attrs = {'id':'contentsBody'})
-        soup_day_area = soup_area.find('div', attrs = {'id':'main'})
-        soup_days = soup_day_area.find_all('div', attrs = {'class':'panel'})
+        # soup_area = soup.find('div', attrs = {'id':'contentsBody'})
+        # soup_day_area = soup_area.find('div', attrs = {'id':'main'})
+        # soup_days = soup_day_area.find_all('div', attrs = {'class':'panel'})
+        soup_days = self.parse_days(soup)
         kaisai_list = []
         for soup_day in soup_days:
             kaisai_info = {}
             header = util.Util.trim_clean(soup_day.find('h3').getText())
 
-            kaisai_info['date'] = header
+            kaisai_info['date'] = header.replace(' ','')
             kaisai_info['kaisai'] = []
 
             soup_links = soup_day.find('ul', attrs={'class': 'link_list'})
@@ -38,7 +47,7 @@ class ParserResultTop(parser.ParserPost):
             for soup_kaisai in soup_kaisai_list:
                 kaisai_info_day = {}
                 soup_anchor = soup_kaisai.find('a')
-                if soup_anchor is None:
+                if soup_anchor is None: # ToDo
                     break
 
                 if soup_anchor.has_attr('onclick'):
@@ -62,17 +71,83 @@ class ParserResultTop(parser.ParserPost):
             kaisai_list.append(kaisai_info)
 
             soup_win5 = soup_day.find('ul', attrs={'class': 'win5'})
-            soup_anchor = soup_win5.find('a')
-            if soup_anchor is not None:
-                if soup_anchor.has_attr('onclick'):
-                    try:
-                        params = util.Util.parse_func_params(soup_anchor['onclick'])
-                        kaisai_info['win5'] = params
-                    except parser.ParseError as per:
-                        logger.info('Anchor parse error: ' + soup_anchor.getText())
+            if soup_win5 is not None:
+                soup_anchor = soup_win5.find('a')
+                if soup_anchor is not None:
+                    if soup_anchor.has_attr('onclick'):
+                        try:
+                            params = util.Util.parse_func_params(soup_anchor['onclick'])
+                            kaisai_info['win5'] = params
+                        except parser.ParseError as per:
+                            logger.info('Anchor parse error: ' + soup_anchor.getText())
 
 
         return kaisai_list
+
+
+class ParserResultKaisaiList(ParserResultTop):
+
+    def parse_days(self, soup):
+        soup_days = soup.find_all('div', attrs={'class': 'past_result_line_unit'})
+
+        return soup_days
+
+class ParserResultKaisai(parser.ParserPost):
+
+    def parse_content(self, soup):
+        kaisai_list = {}
+
+        soup_area = soup.find('div', attrs={'id': 'contentsBody'})
+        soup_table = soup_area.find('table', attrs={'id': 'race_list'})
+        soup_caption = soup_table.find('caption')
+        soup_caption_main = soup_caption.find('div', attrs={'class': 'main'})
+        date, weekday, index, place, nichisuu = util.Util.parse_kaisai_date(soup_caption_main.getText())
+        kaisai_list['date'] = date
+        kaisai_list['weekday'] = weekday
+        kaisai_list['index'] = index
+        kaisai_list['place'] = place
+        kaisai_list['nichisuu'] = nichisuu
+        kaisai_list['races'] = []
+
+        soup_tbody = soup_table.find('tbody')
+        soup_races = soup_tbody.find_all('tr')
+        for soup_race in soup_races:
+            race = {}
+            soup_anchor = soup_race.find('a')
+            if soup_anchor.has_attr('onclick'):
+                try:
+                    params = util.Util.parse_func_params(soup_anchor['onclick'])
+                except parser.ParseError as per:
+                    logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+            soup_img = soup_anchor.find('img')
+            race_index = int(soup_img['alt'].replace('レース', ''))
+
+            race['index'] = race_index
+            race['param'] = util.Util.format_params(params)
+
+            soup_course = soup_race.find('td', attrs={'class': 'course'})
+            race['course'] = soup_course.getText()
+
+            soup_race_name = soup_race.find('td', attrs={'class': 'race_name'}).find_all('li')
+            race_name = util.Util.trim_clean(soup_race_name[0].getText())
+            race_cond = util.Util.trim_clean(soup_race_name[1].getText())
+            if race_cond == '':
+                race_cond = race_name
+            race['name'] = race_name
+            race['cond'] = race_cond
+
+            soup_num = soup_race.find('td', attrs={'class': 'num'})
+            race['uma_num'] = int(soup_num.getText().replace('頭',''))
+
+            soup_dist = soup_race.find('td', attrs={'class': 'dist'})
+            dist = int(soup_dist.getText().replace('メートル', '').replace(',', ''))
+            race['dist'] = dist
+
+            kaisai_list['races'].append(race)
+
+        return kaisai_list
+
 
 
 class ParserResultRace(parser.ParserPost):
@@ -255,11 +330,13 @@ class ParserResultRace(parser.ParserPost):
 
             horse['trainer'] = trainer
 
-
             try :
                 horse['win_fav'] = int(soup_tr.find('td', attrs={'class': 'pop'}).getText())
             except ValueError:
-                logger.info('win_fav parse error: ' + soup_anchor.getText())
+                if soup_tr.find('td', attrs={'class': 'pop'}).getText() == '':
+                    logger.info('win_fav parse empty')
+                else:
+                    logger.error('win_fav parse fail')
 
             race['horses'].append(horse)
 
