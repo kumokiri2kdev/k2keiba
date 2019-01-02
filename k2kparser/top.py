@@ -52,7 +52,7 @@ class ParserTop(parser.Parser):
                         param_list['haraimodoshi'] = util.Util.format_params(params)
                     elif params[0].endswith('accessS.html'):
                         # print("レース結果 : {}".format(params[1]))
-                        param_list['race'] = util.Util.format_params(params)
+                        param_list['result'] = util.Util.format_params(params)
                     elif params[0].endswith('accessT.html'):
                         # print("特別レース登録馬 : {}".format(params[1]))
                         param_list['tokubetu'] = util.Util.format_params(params)
