@@ -29,7 +29,19 @@ logging.config.dictConfig({
 
 logger = logging.getLogger(__name__)
 
+class UtilError(Exception):
+    pass
+
 class Util:
+    @classmethod
+    def parse_int_only(cls, str):
+        try :
+            num = int(re.sub(r'[^0-9]', '', str))
+        except ValueError:
+            raise UtilError
+
+        return num
+
     @classmethod
     def parse_func_params(cls, str):
         matched = re.search(r'\(.*\)', str)
@@ -98,6 +110,7 @@ class Util:
     @classmethod
     def parse_weight(cls, str):
         try:
+            str = Util.trim_clean(str)
             weight = int(re.search(r'[0-9]*', str).group(0))
             try:
                 weight_diff = int(re.search(r'\(.*\)', str).group(0).replace('(','').replace(')',''))
@@ -112,9 +125,12 @@ class Util:
     def parse_age(cls, str):
         str = Util.trim_clean(str)
         age = int(re.sub(r'[^0-9]', '', str))
-        sex, hair = (re.sub(r'[0-9]','', str).split('/'))
+        splits = (re.sub(r'[0-9]','', str).split('/'))
 
-        return age, sex, hair
+        if len(splits) > 1:
+            return age, splits[0], splits[1]
+        else:
+            return age, splits[0]
 
     @classmethod
     def parser_date(cls, kaisai):
@@ -123,3 +139,18 @@ class Util:
         weekday = re.search(r'（[月火水木金土日]）', kaisai)
 
         return date[0], weekday[0].replace("（", "").replace("）", "")
+
+    @classmethod
+    def parse_race_time(cls, time_str):
+        try:
+            time_str = cls.trim_clean(time_str)
+            times = time_str.split(":")
+            if len(times) > 1:
+                time_sec = int(times[0]) * 600 + int(float(times[1]) * 10)
+            else:
+                time_sec = int(float(times[0]) * 10)
+        except ValueError:
+            logger.debug('Value error: {}'.format(time_str))
+            raise UtilError
+
+        return time_sec
