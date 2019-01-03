@@ -34,16 +34,27 @@ class ParserWin5Filter(parser.ParserPost):
 
     @classmethod
     def race_ninki_filter(cls, element):
-        return int(element.get_text().strip().replace('番人気', ''))
+        ninki = element.get_text().strip()
+        if ninki == '':
+            return None
+
+        return int(ninki.replace('番人気', ''))
 
     @classmethod
     def race_remaining_filter(cls, element):
-        return int(element.get_text().strip().replace('票', '').replace(',', ''))
+        remaining = element.get_text().strip()
+        if remaining == '':
+            return None
+
+        return int(remaining.replace('票', '').replace(',', ''))
 
     @classmethod
     def race_winner_filter(cls, element):
         ret = {}
-        num = element.find('td', attrs={'class': 'paddingoff'})
+        num = element.find('td')
+        if num is None:
+            return
+
         ret['number'] = int(num.get_text())
         anchor = element.find_next_sibling().find('a')
         params = util.Util.parse_func_params(anchor['onclick'])
@@ -70,7 +81,7 @@ class ParserWin5Kaisai(parser.ParserPost):
                     try:
                         ret['carry_over'] = int(soup_td.get_text().replace('円', '').replace(',', ''))
                     except:
-                        logger.warning('Carry over here, but failed to get information.')
+                        logger.debug('Carry over here, but failed to get information.')
 
     @classmethod
     def parse_win5list_1(cls, win5list, ret):
@@ -82,11 +93,17 @@ class ParserWin5Kaisai(parser.ParserPost):
                 if '発売票数' in tag:
                     soup_td = soup_tr.find('td')
                     if soup_td != None:
-                        ret['bets'] = int(soup_td.get_text().replace('票', '').replace(',', ''))
+                        try:
+                            ret['bets'] = int(soup_td.get_text().replace('票', '').replace(',', ''))
+                        except ValueError:
+                            logger.debug('Total Bet is empty ? : ' + soup_td.get_text())
                 elif '発売金額' in tag:
                     soup_td = soup_tr.find('td')
                     if soup_td != None:
-                        ret['bet_price'] = int(soup_td.get_text().replace('円', '').replace(',', ''))
+                        try:
+                            ret['bet_price'] = int(soup_td.get_text().replace('円', '').replace(',', ''))
+                        except ValueError:
+                            logger.debug('Total Bet Price is empty ? : ' + soup_td.get_text())
 
     @classmethod
     def parse_win5list_2(cls, win5list, ret):
@@ -127,7 +144,9 @@ class ParserWin5Kaisai(parser.ParserPost):
                     continue
 
                 for i, soup_sibling in enumerate(soup_siblings):
-                    ret['list'][i][json_tag] = filter_func(soup_sibling)
+                    info = filter_func(soup_sibling)
+                    if info is not None:
+                        ret['list'][i][json_tag] = info
 
     @classmethod
     def parse_win5list_3(cls, win5list, ret):
@@ -140,18 +159,27 @@ class ParserWin5Kaisai(parser.ParserPost):
                 if '的中馬番' in tag:
                     soup_td = soup_tr.find('td')
                     if soup_td != None:
-                        ret['indexes'] = soup_td.get_text().strip()
+                        indexes = soup_td.get_text().strip()
+                        if indexes != '':
+                            ret['indexes'] = indexes
                 elif '払戻金' in tag:
                     soup_td = soup_tr.find('td')
                     if soup_td != None:
                         try:
-                            ret['pay_back'] = int(soup_td.get_text().replace('円', '').replace(',', ''))
+                            pay_back = soup_td.get_text().strip()
+                            if pay_back != '':
+                                ret['pay_back'] = int(pay_back.replace('円', '').replace(',', ''))
                         except:
                             logger.info('Pay Back here, but failed to get information.')
                 elif '的中票数' in tag:
                     soup_td = soup_tr.find('td')
                     if soup_td != None:
-                        ret['remaining'] = int(soup_td.get_text().replace('票', '').replace(',', ''))
+                        try:
+                            remaining = soup_td.get_text().strip()
+                            if remaining != '':
+                                ret['remaining'] = int(remaining.replace('票', '').replace(',', ''))
+                        except:
+                            logger.info('Remaining here, but failed to get information.')
 
 
     def parse_content(self, soup):
@@ -181,7 +209,7 @@ class ParserWin5Kaisai(parser.ParserPost):
             self.parse_win5list_3
         ]
 
-        for func, list in zip(win5list_parse_funcs, soup_win5lists):
+        for func, list in zip(win5list_parse_funcs, soup_win5lists[-5:]):
             func(list, ret)
 
         return ret
