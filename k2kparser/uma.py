@@ -92,6 +92,42 @@ class ParserUma(parser.ParserPost):
         return ret_basic
 
     def parse_content(self, soup):
+        """ Parse content and return parameters if exist
+        :param soup:
+        :return: Array of Dict of Horse Information
+            'basic':
+                'name': 馬名
+            'races': Array of races
+                'date': 日付
+                'place': 競馬場
+                'name': レース名
+                'params': URL and Post parameter of the race
+                'candd': コースと距離
+                'condition': 馬場状態
+                'number': 頭数
+                'ninki': 人気
+                'rank': 着順
+                'jokey': 騎手
+                'hande': 斤量
+                'weight': 馬体重
+                'time': 走破時計
+                'winner': 勝ち馬
+                'type': 'race'
+            'profile': プロフィール
+                '父': 父
+                '性別': 性別
+                '馬主': 馬主
+                '母': 母
+                '馬齢': 馬齢
+                '調教師': 調教師
+                '母の父': 母の父
+                '生年月日': 生年月日
+                '生産牧場': 生産牧場
+                '母の母': 母の母
+                '毛色': 毛色
+                '産地': 産地
+                '馬名意味': 馬名意味
+        """
         tbls = soup.find_all("table")
         filtered_tbls = self.filter_tables(tbls)
 
