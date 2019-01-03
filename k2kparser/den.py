@@ -173,6 +173,24 @@ class ParserDenRace(parser.ParserPost):
                     'weight': 斤量条件
                     'distance': 距離
                     'course': コース
+                    'horses': Array of horse
+                        'name': 馬名
+                        'url': url情報
+                        'weight': 馬体重
+                        'weight_diff': 馬体重増減
+                        'trainer': 調教師
+                            'name': 調教師名
+                            'url': url情報
+                        'sire': 父
+                        'mare': 母
+                        'bms': 母父
+                        'hande': 斤量
+                        'jockey': 騎手
+                            'name': 騎手名
+                            'url': url情報
+                        'age': 馬齢
+                        'sex': 性別
+                        'hair': 毛色
                 """
 
         race = {}
