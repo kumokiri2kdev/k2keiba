@@ -34,7 +34,8 @@ class ParserDenTop(parser.ParserPost):
             kaisai_info['date'] = header
             kaisai_info['kaisai'] = []
 
-            soup_kaisai_list = soup_day.find_all('li')
+            soup_div3 = soup_day.find('ul', attrs={'class': 'div3'})
+            soup_kaisai_list = soup_div3.find_all('li')
             for soup_kaisai in soup_kaisai_list:
                 kaisai_info_day = {}
                 soup_anchor = soup_kaisai.find('a')
