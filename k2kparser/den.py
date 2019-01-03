@@ -263,8 +263,9 @@ class ParserDenRace(parser.ParserPost):
             except:
                 pass
 
-            owner = soup_tr.find('p', attrs={'class': 'owner'}).getText()
-            hourse['owner'] = owner
+            soup_owner = soup_tr.find('p', attrs={'class': 'owner'})
+            if soup_owner is not None:
+                hourse['owner'] = soup_owner.getText()
 
             soup_trainer = soup_tr.find('p', attrs={'class': 'trainer'})
             trainer = {}
