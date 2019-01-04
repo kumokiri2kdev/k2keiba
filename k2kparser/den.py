@@ -1,5 +1,6 @@
 """ JRA Den Page Top Parser """
 import logging
+import re
 
 from . import util
 from . import parser
@@ -175,6 +176,8 @@ class ParserDenRace(parser.ParserPost):
                     'distance': 距離
                     'course': コース
                     'horses': Array of horse
+                        'waku': 枠番
+                        'num': 馬番
                         'name': 馬名
                         'url': url情報
                         'weight': 馬体重
@@ -258,6 +261,27 @@ class ParserDenRace(parser.ParserPost):
         race['hourses'] = []
         for soup_tr in soup_trs:
             hourse = {}
+            soup_td_waku = soup_tr.find('td', attrs={'class': 'waku'})
+            if soup_td_waku is not None:
+                soup_img = soup_td_waku.find('img')
+                if soup_img is not None:
+                    try :
+                        waku = int(re.sub(r'[^0-9]', '', soup_img['alt']))
+                        hourse['waku'] = waku
+                    except ValueError:
+                        logger.error('Failed to get Waku Number : ' + soup_td_waku)
+
+
+            soup_td_num = soup_tr.find('td', attrs={'class': 'num'})
+            if soup_td_num is not None:
+                td_num = soup_td_num.getText().strip()
+                if td_num != '':
+                    try :
+                        num = int(td_num)
+                        hourse['num'] = num
+                    except ValueError:
+                        logger.error('Failed to get Uma Number : ' + td_num)
+
             soup_name = soup_tr.find('div', attrs={'class': 'name'})
             hourse['name'] = util.Util.trim_clean(soup_name.getText())
             soup_anchor = soup_name.find('a')
