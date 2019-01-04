@@ -183,6 +183,37 @@ class ParserWin5Kaisai(parser.ParserPost):
 
 
     def parse_content(self, soup):
+        """ Parse content and return win5 kaisai info if exist
+        :param soup:
+        :return: Dict of win5 kaisai info
+            'date': 日付
+            'weekday': 曜日
+            'prev_url': 前回 URL
+            'next_url': 次回 URL
+            'carry_over': キャリーオーバー数（未発生時は 0）
+            'bets':
+            'kaisai': Array of Kaisai information
+                'index': 開催回数
+                'day': 開催日（何日目）
+                'place': 競馬場
+                'params': URL and Post parameter
+                'bets': 投票数
+                'bet_price': 投票金額
+                'list': Array of races
+                    'index': WIN5 レース番号
+                    'departure': 発走時刻
+                    'race': レース情報
+                        'id': 東京10R'
+                        'name': レース名
+                        'url': URL and Post parameter
+                        'winner': 勝ち馬
+                            'number': 馬番
+                            'horse': 馬情報
+                                'name': 馬名
+                                'url': URL and Post parameter
+                        'ninki': 人気順
+                        'remaining': 残票数
+        """
         ret = {}
 
         soup_date_str = soup.find('td', attrs={'class': 'header3'})

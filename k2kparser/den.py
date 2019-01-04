@@ -192,7 +192,7 @@ class ParserDenRace(parser.ParserPost):
                         'age': 馬齢
                         'sex': 性別
                         'hair': 毛色
-                """
+        """
 
         race = {}
 

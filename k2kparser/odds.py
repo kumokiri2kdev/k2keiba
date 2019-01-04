@@ -100,6 +100,28 @@ class OddsParserWin(parser.ParserPost):
 
 
     def parse_content(self, soup):
+        """ Parse content and return odds win info if exist
+        :param soup:
+        :return: Array of Dict of Odds Win
+            'links': URLs
+                'win': 単勝・複勝 URL and Post parameter
+                'umaren': 馬連 URL and Post parameter
+                'wide': 馬連 URL and Post parameter
+                'umatan': 馬連 URL and Post parameter
+                'trio': 馬連 URL and Post parameter
+                'tierce': 馬連 URL and Post parameter
+            'horses': Array of Horse Odds
+                'waku': 枠順
+                'num': 馬番
+                'win': 単勝オッズ
+                'place': 複勝オッズ
+                    'min': 最低オッズ
+                    'max': 最大オッズ
+            'vote': 全体投票情報
+                'win': 単勝投票数
+                'place': 複勝投票数
+                'total': 単勝 + 複勝投票数
+        """
         odds = {}
         soup_area = soup.find('div', attrs={'id': 'contentsBody'})
 

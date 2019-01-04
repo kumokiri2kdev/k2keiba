@@ -21,7 +21,7 @@ class ParserResultTop(parser.ParserPost):
     def parse_content(self, soup):
         """ Parse content and return parameters if exist
         :param soup:
-        :return: Array of Dict of Kaisai
+        :return: Array of Dict of Kaisai View
             'date': 日付
             'kaisai': Array of Kaisai information
                 'index': 開催回数
@@ -95,6 +95,23 @@ class ParserResultKaisaiList(ParserResultTop):
 class ParserResultKaisai(parser.ParserPost):
 
     def parse_content(self, soup):
+        """ Parse content and return kaisai info if exist
+                :param soup:
+                :return: Dict of kaisai info
+                    'date': 日付
+                    'weekday': 曜日
+                    'index': 開催回数
+                    'place': 競馬場
+                    'nichisuu': 開催日数  (5回中山9日 => index: 5, place: 中山, nichisuu: 9)
+                    'races': Array of race
+                        'index': レース番号
+                        'param': URL and Post parameter
+                        'course': コース
+                        'dist': 距離
+                        'name': レース名
+                        'cond': 条件
+                        'uma_num': 頭数
+        """
         kaisai_list = {}
 
         soup_area = soup.find('div', attrs={'id': 'contentsBody'})
@@ -170,6 +187,45 @@ class ParserResultRace(parser.ParserPost):
 
 
     def parse_content(self, soup):
+        """ Parse content and return race info if exist
+                :param soup:
+                :return: Dict of win5 kaisai info
+                    'date': 日付
+                    'weekday': 曜日
+                    'index': 開催回数
+                    'place': 競馬場
+                    'nichisuu': 開催日数  (5回中山9日 => index: 5, place: 中山, nichisuu: 9)
+                    'weather': 天気
+                    'course': コース
+                    'course_cond': 馬場状態
+                    'departure': 発走時刻
+                    'name': レース名（ない場合はクラス名）
+                    'category': レース条件（カテゴリ）
+                    'class': クラス
+                    'rule': レース条件（ルール）
+                    'weight': レース条件（斤量）
+                    'distance': 距離
+                    'odds': URL and Post parameter
+                    'horses': 馬毎の成績リスト
+                        'place': 着順
+                        'waku': 枠順
+                        'num': 馬番
+                        'name': 馬名
+                        'url': URL and Post parameter
+                        'age': 年齢
+                        'sex': 性別
+                        'hande': 斤量
+                        'finish': 走破時計（msec）
+                        'corner': コーナー通過順
+                        'flap': 上がり3F（msec）
+                        'weight': 馬体重
+                        'weight_diff': 馬体重増減
+                        'trainer': 調教師
+                            'name': 名前
+                            'url': URL and Post parameter
+                        'win_fav': 人気順
+
+        """
         race = {}
 
         soup_area = soup.find('div', attrs={'id': 'contentsBody'})
