@@ -235,3 +235,47 @@ class OddsParserBracketQuinella(OddsParser):
             'wakuren': 枠連投票数
             'total': 単勝 + 複勝投票数
     """
+
+class OddsParserBracket(OddsParser):
+    def parse_odds_content(self, soup_area):
+        soup_ul = soup_area.find('ul', attrs={'class': 'umaren_list mt15'})
+        soup_lis = soup_ul.find_all('li')
+
+        odds = {}
+        for soup_li in soup_lis:
+            soup_table = soup_li.find('table')
+            tag_1 = soup_table.find('caption').getText().strip()
+            soup_trs = soup_li.find_all('tr')
+            for soup_tr in soup_trs:
+                th = soup_tr.find('th').getText().strip()
+                td = soup_tr.find('td').getText().strip()
+                if td == '':
+                    continue
+                else:
+                    try:
+                        odds_val = float(td)
+                    except ValueError:
+                        logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
+                        odds_val = td
+
+                odds[tag_1 + '-' + th] = odds_val
+
+        return odds
+
+    # parse_content output
+    """ Parse content and return odds win info if exist
+    :param soup:
+    :return: Array of Dict of Odds Win
+        'links': URLs
+            'win': 単勝・複勝 URL and Post parameter
+            'umaren': 馬連 URL and Post parameter
+            'wide': 馬連 URL and Post parameter
+            'umatan': 馬連 URL and Post parameter
+            'trio': 馬連 URL and Post parameter
+            'tierce': 馬連 URL and Post parameter
+        'odds': Dict of Umaren Odds {馬連組み合わせ : オッズ}
+        'vote': 全体投票情報
+            'umaren': 枠連投票数
+            'total': 単勝 + 複勝投票数
+    """
+
