@@ -321,8 +321,10 @@ class OddsParserBracketQuinella(OddsParser):
     """
 
 class OddsParserBracket(OddsParser):
+    list_class_tag = 'umaren_list'
     def parse_odds_content(self, soup_area):
-        soup_ul = soup_area.find('ul', attrs={'class': 'umaren_list mt15'})
+        print(self.list_class_tag)
+        soup_ul = soup_area.find('ul', attrs={'class': self.list_class_tag})
         soup_lis = soup_ul.find_all('li')
 
         odds = {}
@@ -363,3 +365,21 @@ class OddsParserBracket(OddsParser):
             'total': 単勝 + 複勝投票数
     """
 
+class OddsParserExacta(OddsParserBracket):
+    list_class_tag = 'umatan_list'
+    # parse_content output
+    """ Parse content and return odds exacta info if exist
+    :param soup:
+    :return: Array of Dict of Odds Exacta
+        'links': URLs
+            'win': 単勝・複勝 URL and Post parameter
+            'umaren': 馬連 URL and Post parameter
+            'wide': 馬連 URL and Post parameter
+            'umatan': 馬連 URL and Post parameter
+            'trio': 馬連 URL and Post parameter
+            'tierce': 馬連 URL and Post parameter
+        'odds': Dict of Umatan Odds {馬連組み合わせ : オッズ}
+        'vote': 全体投票情報
+            'umatan': 枠連投票数
+            'total': 単勝 + 複勝投票数
+    """
