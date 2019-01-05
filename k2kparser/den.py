@@ -247,7 +247,8 @@ class ParserDenRace(parser.ParserPost):
                     except ValueError:
                         logger.error('Failed to get Uma Number : ' + td_num)
 
-            soup_name = soup_tr.find('div', attrs={'class': 'name'})
+            soup_horse_td = soup_tr.find('td', attrs={'class': 'horse'})
+            soup_name = soup_horse_td.find('div', attrs={'class': 'name'})
             hourse['name'] = util.Util.trim_clean(soup_name.getText())
             soup_anchor = soup_name.find('a')
             if soup_anchor is not None and soup_anchor.has_attr('onclick'):
@@ -257,25 +258,26 @@ class ParserDenRace(parser.ParserPost):
                     logger.info('Anchor parse error: ' + soup_anchor.getText())
 
             try:
-                odds, odds_rank = util.Util.parse_odds(soup_tr.find('div', attrs={'class': 'odds'}).getText())
+                odds, odds_rank = util.Util.parse_odds(soup_horse_td.find('div', attrs={'class': 'odds'}).getText())
                 hourse['odds'] = odds
                 hourse['odds_rank'] = odds_rank
             except:
                 pass
 
-            try:
-                soup_weight = soup_tr.find('div', attrs={'class': 'weight'})
-                weight, weight_diff = util.Util.parse_weight(soup_weight.getText())
-                hourse['weight'] = weight
-                hourse['weight_diff'] = weight_diff
-            except:
-                pass
+            soup_weight = soup_horse_td.find('div', attrs={'class': 'weight'})
+            if soup_weight is not None and soup_weight.getText() != '':
+                try:
+                    weight, weight_diff = util.Util.parse_weight(soup_weight.getText())
+                    hourse['weight'] = weight
+                    hourse['weight_diff'] = weight_diff
+                except:
+                    logger.error('Failed to parse weight and weight diff : ' + soup_weight.getText())
 
-            soup_owner = soup_tr.find('p', attrs={'class': 'owner'})
+            soup_owner = soup_horse_td.find('p', attrs={'class': 'owner'})
             if soup_owner is not None:
                 hourse['owner'] = soup_owner.getText()
 
-            soup_trainer = soup_tr.find('p', attrs={'class': 'trainer'})
+            soup_trainer = soup_horse_td.find('p', attrs={'class': 'trainer'})
             trainer = {}
             trainer['name'] = util.Util.trim_clean(soup_trainer.getText())
             soup_anchor = soup_trainer.find('a')
@@ -287,15 +289,17 @@ class ParserDenRace(parser.ParserPost):
 
             hourse['trainer'] = trainer
 
-            hourse['sire'] = util.Util.trim_clean(soup_tr.find('li', attrs={'class': 'sire'}).getText()).replace('父：','')
-            mare_info = util.Util.trim_clean(soup_tr.find('li', attrs={'class': 'mare'}).getText()).split(' ')
+            hourse['sire'] = util.Util.trim_clean(soup_horse_td.find('li', attrs={'class': 'sire'}).getText()).replace('父：','')
+            mare_info = util.Util.trim_clean(soup_horse_td.find('li', attrs={'class': 'mare'}).getText()).split(' ')
             hourse['mare'] = mare_info[0].replace('母：','')
             hourse['bms'] = mare_info[-1].replace('(母の父：','').replace(')','')
 
+            soup_jokey_td = soup_tr.find('td', attrs={'class': 'jockey'})
             hourse['hande'] = float(util.Util.trim_clean(
-                soup_tr.find('p', attrs={'class': 'weight'}).getText()).replace('kg',''))
+                soup_jokey_td.find('p', attrs={'class': 'weight'}).getText()).replace('kg',''))
 
-            soup_jockey = soup_tr.find('p', attrs={'class': 'jockey'})
+
+            soup_jockey = soup_jokey_td.find('p', attrs={'class': 'jockey'})
             jockey = {}
             jockey['name'] = util.Util.trim_clean(soup_jockey.getText())
             soup_anchor = soup_jockey.find('a')
@@ -307,7 +311,7 @@ class ParserDenRace(parser.ParserPost):
 
             hourse['jockey'] = jockey
 
-            age, sex, hair = util.Util.parse_age(soup_tr.find('p', attrs={'class': 'age'}).getText())
+            age, sex, hair = util.Util.parse_age(soup_jokey_td.find('p', attrs={'class': 'age'}).getText())
             hourse['age'] = age
             hourse['sex'] = sex
             hourse['hair'] = hair
