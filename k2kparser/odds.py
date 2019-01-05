@@ -26,6 +26,82 @@ class ParserOddsTop(parser.ParserKaisaiTop):
 
         return soup_thisweek
 
+class ParserOddsKaisai(parser.ParserPost):
+    def parse_content(self, soup):
+        """ Parse content and return kaisai odds list
+        :param soup:
+        :return: Array of Dict of Kaisai Race
+            'date': 日付
+            'weekday': 曜日
+            'index': 開催回数
+            'nichisuu': 開催日数
+            'place': 場所
+            'races': Array of race
+                'index': レース番号
+                'departure': 発走時刻
+                'name': レース名
+                'cond': レース条件
+                'params' Dict of odds params
+                    'tanpuku': 単複 URL and Post parameter
+                    'wakuren': 枠連 URL and Post parameter
+                    'umaren': 馬連 URL and Post parameter
+                    'umatan': 馬単 URL and Post parameter
+                    'wide': ワイド URL and Post parameter
+                    'trio': 三連複 URL and Post parameter
+                    'tierce': 三連単 URL and Post parameter
+
+        """
+
+        kaisai_list = {}
+
+        soup_area = soup.find('div', attrs={'id': 'contentsBody'})
+        soup_table = soup_area.find('table', attrs={'id': 'race_list'})
+        soup_caption = soup_table.find('caption')
+        soup_caption_main = soup_caption.find('div', attrs={'class': 'main'})
+        date, weekday, index, place, nichisuu = util.Util.parse_kaisai_date(soup_caption_main.getText())
+        kaisai_list['date'] = date
+        kaisai_list['weekday'] = weekday
+        kaisai_list['index'] = index
+        kaisai_list['place'] = place
+        kaisai_list['nichisuu'] = nichisuu
+        kaisai_list['races'] = []
+
+        soup_tbody = soup_table.find('tbody')
+        soup_races = soup_tbody.find_all('tr')
+        for soup_race in soup_races:
+            race = {}
+            soup_race_name = soup_race.find('td', attrs={'class': 'race_name'}).find_all('li')
+            race_name = util.Util.trim_clean(soup_race_name[0].getText())
+            race_cond = util.Util.trim_clean(soup_race_name[1].getText())
+            if race_cond == '':
+                race_cond = race_name
+
+            soup_anchor = soup_race.find('a')
+            soup_img = soup_anchor.find('img')
+            race_index = int(soup_img['alt'].replace('レース', ''))
+
+            race['index'] = race_index
+            race['name'] = race_name
+            race['cond'] = race_cond
+
+            soup_ul = soup_race.find('ul', attrs={'class': 'btn_list'})
+            soup_lis = soup_ul.find_all('li')
+            odds_params = {}
+            for soup_li in soup_lis:
+                soup_anchor = soup_li.find('a')
+                if soup_anchor is not None and soup_anchor.has_attr('onclick'):
+                    try:
+                        params = util.Util.parse_func_params(soup_anchor['onclick'])
+                        odds_params[soup_li['class'][0]] = params
+                    except parser.ParseError as per:
+                        logger.info('Anchor parse error: ' + soup_anchor.getText())
+
+            race['odds_params'] = odds_params
+
+            kaisai_list['races'].append(race)
+
+        return kaisai_list
+
 
 class OddsParser(parser.ParserPost, metaclass=ABCMeta):
     def parse_odds_links(self, soup_area):
