@@ -63,9 +63,14 @@ class ParserKaisaiTop(ParserPost, metaclass=ABCMeta):
     def parse_addtionl_in_day(self, soup_day, kaisai_info):
         pass
 
-    def parse_content(self, soup):
+    def parse_days(self, soup):
         soup_thisweek = self.get_base_soup(soup)
         soup_days = soup_thisweek.find_all('div', attrs={'class': 'panel'})
+
+        return soup_days
+
+    def parse_content(self, soup):
+        soup_days = self.parse_days(soup)
         kaisai_list = []
 
         for soup_day in soup_days:
