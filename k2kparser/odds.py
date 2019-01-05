@@ -501,3 +501,55 @@ class OddsParserTrio(OddsParser):
             'trio': 三連複投票数
             'total': 単勝 + 複勝投票数
     """
+
+
+class OddsParserTierce(OddsParser):
+    def parse_odds_content(self, soup_area):
+        odds = {}
+
+        soup_odds_list = soup_area.find('div', attrs={'id': 'odds_list'})
+        soup_fuku3_unit_list = soup_odds_list.find_all('div', attrs={'class': 'tan3_unit'})
+
+        for soup_fuku3_unit in soup_fuku3_unit_list:
+            soup_lis = soup_fuku3_unit.find_all('li')
+            for soup_li in soup_lis:
+                soup_divs = soup_li.find_all('div', attrs={'class': 'num'})
+                if len(soup_divs) != 2:
+                    logger.error('Not enough pairs')
+                    continue
+
+                soup_trs = soup_li.find_all('tr')
+                for soup_tr in soup_trs:
+                    th = soup_tr.find('th').getText().strip()
+                    td = soup_tr.find('td').getText().strip()
+                    if td == '':
+                        continue
+
+                    tag = '{}-{}-{}'.format(soup_divs[0].getText().strip(), soup_divs[1].getText().strip(), th)
+                    if td != '取消':
+                        try:
+                            odds_val = float(td)
+                            odds[tag] = odds_val
+                        except ValueError:
+                            logger.error('Failed to conver odds ' + td)
+                    else:
+                        odds[tag] = td
+
+        return odds
+
+    # parse_content output
+    """ Parse content and return odds tierce info if exist
+    :param soup:
+    :return: Array of Dict of Odds Tierce
+        'links': URLs
+            'win': 単勝・複勝 URL and Post parameter
+            'umaren': 馬連 URL and Post parameter
+            'wide': 馬連 URL and Post parameter
+            'umatan': 馬連 URL and Post parameter
+            'trio': 馬連 URL and Post parameter
+            'tierce': 馬連 URL and Post parameter
+        'odds': Dict of Trio Odds {三連単組み合わせ: オッズ}
+        'vote': 全体投票情報
+            'tierce': 三連単投票数
+            'total': 単勝 + 複勝投票数
+    """
