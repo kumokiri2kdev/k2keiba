@@ -383,3 +383,73 @@ class OddsParserExacta(OddsParserBracket):
             'umatan': 枠連投票数
             'total': 単勝 + 複勝投票数
     """
+
+
+class OddsParserWide(OddsParser):
+    def parse_odds_content(self, soup_area):
+        soup_ul = soup_area.find('ul', attrs={'class': 'wide_list'})
+        soup_lis = soup_ul.find_all('li')
+
+        odds = {}
+        for soup_li in soup_lis:
+            soup_table = soup_li.find('table')
+            tag_1 = soup_table.find('caption').getText().strip()
+            soup_trs = soup_li.find_all('tr')
+            for soup_tr in soup_trs:
+                th = soup_tr.find('th').getText().strip()
+                odds[tag_1 + '-' + th] = {}
+                soup_td = soup_tr.find('td')
+
+                soup_min = soup_td.find('span', attrs={'class': 'min'})
+                if soup_min is None:
+                    val = soup_td.getText().strip()
+                    odds[tag_1 + '-' + th]['min'] = val
+                    odds[tag_1 + '-' + th]['max'] = val
+                    continue
+
+                min = soup_min.getText().strip()
+                if min == '':
+                    continue
+                else:
+                    try:
+                        min_val = float(min)
+                    except ValueError:
+                        logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
+                        min_val = min
+
+                odds[tag_1 + '-' + th]['min'] = min_val
+
+                max = soup_td.find('span', attrs={'class': 'max'}).getText().strip()
+                if max == '':
+                    continue
+                else:
+                    try:
+                        max_val = float(max)
+                    except ValueError:
+                        logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
+                        max_val = max
+
+                odds[tag_1 + '-' + th]['max'] = max_val
+
+
+        return odds
+
+        # parse_content output
+        """ Parse content and return odds wide info if exist
+        :param soup:
+        :return: Array of Dict of Odds Wide
+            'links': URLs
+                'win': 単勝・複勝 URL and Post parameter
+                'umaren': 馬連 URL and Post parameter
+                'wide': 馬連 URL and Post parameter
+                'umatan': 馬連 URL and Post parameter
+                'trio': 馬連 URL and Post parameter
+                'tierce': 馬連 URL and Post parameter
+            'odds': Dict of Umatan Odds {馬連組み合わせ : {
+                        'min': 最低オッズ
+                        'max': 最大オッズ
+                    }
+            'vote': 全体投票情報
+                'wide': 枠連投票数
+                'total': 単勝 + 複勝投票数
+        """
