@@ -155,7 +155,12 @@ class ParserResultKaisai(parser.ParserPost):
             race['cond'] = race_cond
 
             soup_num = soup_race.find('td', attrs={'class': 'num'})
-            race['uma_num'] = int(soup_num.getText().replace('頭',''))
+            num = soup_num.getText().strip().replace('頭','')
+            if num != '':
+                try :
+                    race['uma_num'] = int(soup_num.getText().replace('頭',''))
+                except ValueError:
+                    logger.error('Failed to convert num into int : ' + num)
 
             soup_dist = soup_race.find('td', attrs={'class': 'dist'})
             dist = int(soup_dist.getText().replace('メートル', '').replace(',', ''))
