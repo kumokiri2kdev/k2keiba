@@ -19,50 +19,58 @@ exchange_table = {
     '3連単': 'tierce',
 }
 
-class ParserOddsTop(parser.ParserPost):
-    def parse_content(self, soup):
+class ParserOddsTop(parser.ParserKaisaiTop):
+    def get_base_soup(self, soup):
         soup_area = soup.find('div', attrs={'id': 'contentsBody'})
 
         soup_thisweek = soup_area.find('div', attrs={'class': 'thisweek'})
-        soup_days = soup_thisweek.find_all('div', attrs = {'class':'panel'})
-        kaisai_list = []
 
-        for soup_day in soup_days:
-            kaisai_info = {}
-            header = util.Util.trim_clean(soup_day.find('h3').getText())
+        return soup_thisweek
 
-            kaisai_info['date'] = header
-            kaisai_info['kaisai'] = []
-
-            soup_div3 = soup_day.find('ul', attrs={'class': 'div3'})
-            soup_kaisai_list = soup_div3.find_all('li')
-            for soup_kaisai in soup_kaisai_list:
-                kaisai_info_day = {}
-                soup_anchor = soup_kaisai.find('a')
-                if soup_anchor is None:
-                    continue
-
-                if soup_anchor.has_attr('onclick'):
-                    try:
-                        params = util.Util.parse_func_params(soup_anchor['onclick'])
-                    except parser.ParseError as per:
-                        logger.info('Anchor parse error: ' + soup_anchor.getText())
-
-                try:
-                    kaisai_param = util.Util.parse_kaisai(soup_kaisai.getText())
-                except ValueError:
-                    logger.info('parse_kaisai error: ' + soup_kaisai.getText())
-
-                kaisai_info_day['index'] = kaisai_param[0]
-                kaisai_info_day['day'] = kaisai_param[1]
-                kaisai_info_day['place'] = kaisai_param[2]
-                kaisai_info_day['param'] = util.Util.format_params(params)
-
-                kaisai_info['kaisai'].append(kaisai_info_day)
-
-            kaisai_list.append(kaisai_info)
-
-        return kaisai_list
+    #
+    # def parse_content(self, soup):
+    #     soup_area = soup.find('div', attrs={'id': 'contentsBody'})
+    #
+    #     soup_thisweek = soup_area.find('div', attrs={'class': 'thisweek'})
+    #     soup_days = soup_thisweek.find_all('div', attrs = {'class':'panel'})
+    #     kaisai_list = []
+    #
+    #     for soup_day in soup_days:
+    #         kaisai_info = {}
+    #         header = util.Util.trim_clean(soup_day.find('h3').getText())
+    #
+    #         kaisai_info['date'] = header
+    #         kaisai_info['kaisai'] = []
+    #
+    #         soup_div3 = soup_day.find('ul', attrs={'class': 'div3'})
+    #         soup_kaisai_list = soup_div3.find_all('li')
+    #         for soup_kaisai in soup_kaisai_list:
+    #             kaisai_info_day = {}
+    #             soup_anchor = soup_kaisai.find('a')
+    #             if soup_anchor is None:
+    #                 continue
+    #
+    #             if soup_anchor.has_attr('onclick'):
+    #                 try:
+    #                     params = util.Util.parse_func_params(soup_anchor['onclick'])
+    #                 except parser.ParseError as per:
+    #                     logger.info('Anchor parse error: ' + soup_anchor.getText())
+    #
+    #             try:
+    #                 kaisai_param = util.Util.parse_kaisai(soup_kaisai.getText())
+    #             except ValueError:
+    #                 logger.info('parse_kaisai error: ' + soup_kaisai.getText())
+    #
+    #             kaisai_info_day['index'] = kaisai_param[0]
+    #             kaisai_info_day['day'] = kaisai_param[1]
+    #             kaisai_info_day['place'] = kaisai_param[2]
+    #             kaisai_info_day['param'] = util.Util.format_params(params)
+    #
+    #             kaisai_info['kaisai'].append(kaisai_info_day)
+    #
+    #         kaisai_list.append(kaisai_info)
+    #
+    #     return kaisai_list
 
 
 
