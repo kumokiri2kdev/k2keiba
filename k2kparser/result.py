@@ -313,8 +313,9 @@ class ParserResultRace(parser.ParserPost):
 
             try:
                 soup_weight = soup_tr.find('td', attrs={'class': 'h_weight'})
-                horse['weight'], horse['weight_diff'] = util.Util.parse_weight(soup_weight.getText())
-
+                weight = soup_weight.getText().strip()
+                if weight != '':
+                    horse['weight'], horse['weight_diff'] = util.Util.parse_weight(weight)
             except:
                 logger.warning('Weight parse error')
 
@@ -330,12 +331,11 @@ class ParserResultRace(parser.ParserPost):
 
             horse['trainer'] = trainer
 
-            try :
-                horse['win_fav'] = int(soup_tr.find('td', attrs={'class': 'pop'}).getText())
-            except ValueError:
-                if soup_tr.find('td', attrs={'class': 'pop'}).getText() == '':
-                    logger.info('win_fav parse empty')
-                else:
+            pop = soup_tr.find('td', attrs={'class': 'pop'}).getText().strip()
+            if pop != '':
+                try :
+                    horse['win_fav'] = int(pop)
+                except ValueError:
                     logger.error('win_fav parse fail')
 
             race['horses'].append(horse)
