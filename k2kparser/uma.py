@@ -65,6 +65,21 @@ class ParserUma(parser.ParserPost):
     def parse_profile(self, profile):
         soup_trs = profile.find_all('tr')
         ret_profile = {}
+        tag_table = {
+            '父': 'father',
+            '母': 'mother',
+            '母の父': 'bmr',
+            '母の母': 'mother_of_mother',
+            '性別': 'sex',
+            '馬主': 'owner',
+            '馬齢': 'age',
+            '調教師': 'trainer',
+            '生年月日': 'birthday',
+            '生産牧場': 'breeding_farm',
+            '毛色': 'hair',
+            '産地': 'breeding_center',
+            '馬名意味': 'origin_of_name'
+        }
 
         for soup_tr in soup_trs:
             soup_tds = soup_tr.find_all('td')
@@ -76,6 +91,9 @@ class ParserUma(parser.ParserPost):
                     value = util.Util.trim_clean(soup_tds[i + 1].get_text())
 
                 if 'tag' in locals() and 'value' in locals():
+                    if tag in tag_table:
+                        tag = tag_table[tag]
+
                     ret_profile[tag] = value
                     del (tag)
                     del (value)
@@ -114,19 +132,20 @@ class ParserUma(parser.ParserPost):
                 'winner': 勝ち馬
                 'type': 'race'
             'profile': プロフィール
-                '父': 父
-                '性別': 性別
-                '馬主': 馬主
-                '母': 母
-                '馬齢': 馬齢
-                '調教師': 調教師
-                '母の父': 母の父
-                '生年月日': 生年月日
-                '生産牧場': 生産牧場
-                '母の母': 母の母
-                '毛色': 毛色
-                '産地': 産地
-                '馬名意味': 馬名意味
+                'father': 父
+                'mother': 母
+                'bmr': 母の父
+                'mother_of_mother': 母の母
+                'sex': 性別
+                'owner': 馬主
+                'age': 馬齢
+                'trainer': 調教師
+                'bmr': 母の父
+                'birthday': 生年月日
+                'breeding_farm': 生産牧場
+                'hair': 毛色
+                'breeding_center': 産地
+                'origin_of_name': 馬名意味
         """
         tbls = soup.find_all("table")
         filtered_tbls = self.filter_tables(tbls)
