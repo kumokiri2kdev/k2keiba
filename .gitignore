@@ -1,2 +1,5 @@
 .idea/workspace.xml
 test/sand_box.py
+dist
+k2keiba.egg-info
+
