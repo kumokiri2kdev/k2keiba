@@ -1,4 +1,5 @@
 """ Parser Base Class """
+import os
 import logging
 import urllib.request
 from abc import ABCMeta, abstractmethod
@@ -19,16 +20,24 @@ class ParseError(Exception):
 
 class Parser:
     def __init__(self, file_path, **kwargs):
-        self.uri = self.gen_asb_uri(file_path)
-
         if 'data' in kwargs:
             self.method = 'POST'
             self.data = kwargs['data'].encode('utf-8')
         else:
             self.method = 'GET'
 
+        if 'base_url' in kwargs:
+            self.base_url = kwargs['base_url']
+        else:
+            if 'K2K_JRA_BASE_URL' in os.environ:
+                self.base_url = os.environ['K2K_JRA_BASE_URL']
+            else:
+                self.base_url = JRA_BASE_URL
+
+        self.uri = self.gen_asb_uri(file_path)
+
     def gen_asb_uri(self, file_path):
-        return JRA_BASE_URL + file_path
+        return self.base_url + file_path
 
     def parse_html(self, content):
         soup = BeautifulSoup(content, "html.parser")
@@ -50,9 +59,9 @@ class Parser:
 
 
 class ParserPost(Parser):
-    def __init__(self, path, param):
+    def __init__(self, path, param, **kwargs):
         param = 'cname=' + param
-        super(ParserPost,self).__init__(path, data=param)
+        super(ParserPost,self).__init__(path, data=param, **kwargs)
 
 
 class ParserKaisaiTop(ParserPost, metaclass=ABCMeta):

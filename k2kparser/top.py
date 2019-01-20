@@ -8,8 +8,8 @@ from . import parser
 logger = logging.getLogger(__name__)
 
 class ParserTop(parser.Parser):
-    def __init__(self):
-        super(ParserTop, self).__init__('/')
+    def __init__(self, **kwargs):
+        super(ParserTop, self).__init__('/', **kwargs)
 
     def parse_content(self, soup):
         """ Parse content and return parameters if exist
