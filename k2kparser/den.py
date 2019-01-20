@@ -44,9 +44,6 @@ class ParserDenTop(parser.ParserKaisaiTop):
 
 
 class ParserDenKaisai(parser.ParserPost):
-    def __init__(self, path, param):
-        super().__init__(path, param)
-
     def parse_content(self, soup):
         """ Parse content and return kaisai race list
         :param soup:
@@ -121,9 +118,6 @@ class ParserDenKaisai(parser.ParserPost):
 
 
 class ParserDenRace(parser.ParserPost):
-    def __init__(self, path, param):
-        super().__init__(path, param)
-
     def parse_content(self, soup):
         """ Parse content and return race den info
                 :param soup:
