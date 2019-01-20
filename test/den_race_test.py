@@ -1,7 +1,7 @@
 import sys
 import logging
 import json
-sys.path.append('../')
+sys.path.insert(0, '../')
 
 import k2kparser.den as pd
 

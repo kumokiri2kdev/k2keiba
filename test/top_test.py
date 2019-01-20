@@ -1,7 +1,7 @@
 """ Test Code for ParserTop class. """
 import sys
 import logging
-sys.path.append('../')
+sys.path.insert(0, '../')
 
 import k2kparser.top as pt
 

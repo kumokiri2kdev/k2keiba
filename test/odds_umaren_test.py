@@ -1,6 +1,6 @@
 import sys
 import logging
-sys.path.append('../')
+sys.path.insert(0, '../')
 
 import k2kparser.odds as po
 

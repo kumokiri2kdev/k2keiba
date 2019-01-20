@@ -1,6 +1,6 @@
 import sys
 import logging
-sys.path.append('../')
+sys.path.insert(0, '../')
 
 import k2kparser.den as pd
 import k2kparser.win5 as pw
