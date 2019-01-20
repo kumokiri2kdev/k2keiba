@@ -14,18 +14,18 @@ class ParserTop(parser.Parser):
     def parse_content(self, soup):
         """ Parse content and return parameters if exist
         :param soup:
-        :return: Dict of parameters(URL and Post parameter)
-            'kaisai': 開催情報
-            'shutuba': 出馬表
-            'odds': オッズ
-            'haraimodoshi': レース結果
-            'tokubetu': 特別レース登録馬
-
+        :return: Array of dict of parameters(URL and Post parameter)
+            'tag': タグ
+                'kaisai': 開催情報, 'shutuba': 出馬表, 'odds': オッズ, 'haraimodoshi': レース結果,'tokubetu': 特別レース登録馬
+            'params': Dict of URL and Post parameter
+                'url':  URL,
+                'param': Prameter
         """
         param_list = {}
         qmenu = soup.find('div', attrs={'id': 'quick_menu'})
 
         if qmenu is None:
+            logger.error('ParseError : "quick menu" not found')
             raise parser.ParseError
 
         content = qmenu.find('div', attrs={"class": "content"})
@@ -33,32 +33,43 @@ class ParserTop(parser.Parser):
             raise parser.ParseError
 
         links = content.find_all('li')
+
+        param_list = []
+
         for link in links:
             anchor = link.find('a')
             if anchor.has_attr('onclick'):
+                tag = ''
                 try :
                     params = util.Util.parse_func_params(anchor['onclick'])
                     if params[0].endswith('accessI.html'):
                         # 開催情報
-                        param_list['kaisai'] = util.Util.format_params(params)
+                        tag = 'kaisai'
                     elif params[0].endswith('accessD.html'):
                         # 出馬表
-                        param_list['shutuba'] = util.Util.format_params(params)
+                        tag = 'shutuba'
                     elif params[0].endswith('accessO.html'):
                         # オッズ
-                        param_list['odds'] = util.Util.format_params(params)
+                        tag = 'odds'
                     elif params[0].endswith('accessH.html'):
-                        # print("払い戻し : {}".format(params[1]))
-                        param_list['haraimodoshi'] = util.Util.format_params(params)
+                        # 払い戻し
+                        tag = 'haraimodoshi'
                     elif params[0].endswith('accessS.html'):
-                        # print("レース結果 : {}".format(params[1]))
-                        param_list['result'] = util.Util.format_params(params)
+                        # レース結果
+                        tag = 'result'
                     elif params[0].endswith('accessT.html'):
-                        # print("特別レース登録馬 : {}".format(params[1]))
-                        param_list['tokubetu'] = util.Util.format_params(params)
+                        # 特別レース登録馬
+                        tag = 'tokubetu'
                     else:
                         logger.warning('Unknown URL: ' + params[0])
-                except parser.ParseError as per:
-                    logger.info('Anchor parse error: ' + anchor.getText())
+                        continue
+                except parser.ParseError:
+                    logger.debug('Anchor parse error: ' + anchor.getText())
+                    continue
+
+                param_list.append({
+                    'tag': tag,
+                    'params': util.Util.format_params(params)
+                })
 
         return param_list
