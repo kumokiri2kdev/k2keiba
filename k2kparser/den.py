@@ -34,6 +34,7 @@ class ParserDenTop(parser.ParserKaisaiTop):
     :param soup:
     :return: Array of Dict of Kaisai
         'date': 日付
+        'weekday': 曜日
         'kaisai': Array of Kaisai information
             'index': 開催回数
             'day': 開催日（何日目）

@@ -91,6 +91,14 @@ class Util:
                place[0], int(day[0].replace("日", ""))
 
     @classmethod
+    def parse_kaisai_date_week(cls, kaisai):
+        kaisai = kaisai.strip()
+        date = re.search(r'[0-9]{1,2}月[0-9]{1,2}日', kaisai)
+        weekday = re.search(r'（[月火水木金土日]曜）', kaisai)
+
+        return date[0], weekday[0].replace("（", "").replace("）", "")
+
+    @classmethod
     def parse_course_distance(cls, str):
         distance = int(re.sub(r'[^0-9]', '', str))
         course = re.sub(r'（|）','', re.search(r'（.*）', str).group(0))

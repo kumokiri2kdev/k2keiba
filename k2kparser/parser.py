@@ -85,8 +85,10 @@ class ParserKaisaiTop(ParserPost, metaclass=ABCMeta):
         for soup_day in soup_days:
             kaisai_info = {}
             header = util.Util.trim_clean(soup_day.find('h3').getText())
+            date, weekday = util.Util.parse_kaisai_date_week(header)
 
-            kaisai_info['date'] = header
+            kaisai_info['date'] = date
+            kaisai_info['week_day'] = weekday
             kaisai_info['kaisai'] = []
 
             soup_div3 = soup_day.find('ul', attrs={'class': 'div3'})
