@@ -214,7 +214,9 @@ class ParserResultRace(parser.ParserPost):
         soup_type = soup_result.find('div', attrs={'class': 'type'})
         race['category'] = soup_type.find('div', attrs={'class': 'category'}).getText()
         race['class'] = soup_type.find('div', attrs={'class': 'class'}).getText()
-        race['rule'] = soup_type.find('div', attrs={'class': 'rule'}).getText()
+        rule = soup_type.find('div', attrs={'class': 'rule'}).getText().strip()
+        if rule is not '':
+            race['rule'] = rule
         race['weight'] = soup_type.find('div', attrs={'class': 'weight'}).getText()
         distance, course = \
             util.Util.parse_course_distance(soup_type.find('div', attrs={'class': 'course'}).getText())
