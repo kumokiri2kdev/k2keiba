@@ -72,4 +72,13 @@ class ParserTop(parser.Parser):
                     'params': util.Util.format_params(params)
                 })
 
+        if len(param_list) > 0:
+            param_list.append({
+                'tag': 'search',
+                'params': {
+                    'url': '/JRADB/accessR.html',
+                    'param': 'pw02uliD1'
+                }
+            })
+
         return param_list
