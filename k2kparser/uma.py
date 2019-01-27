@@ -57,8 +57,13 @@ class ParserUma(parser.ParserPost):
                 ret_race_ex['type'] = 'info'
                 ret.append(ret_race_ex)
             else:
-                ret_race['type'] = 'race'
-                ret.append(ret_race)
+                race = {}
+                for key in ret_race:
+                    if ret_race[key] is not '':
+                        race[key] = ret_race[key]
+
+                race['type'] = 'race'
+                ret.append(race)
 
         return ret
 
@@ -90,7 +95,7 @@ class ParserUma(parser.ParserPost):
                 if len(soup_tds) > (i + 1):
                     value = util.Util.trim_clean(soup_tds[i + 1].get_text())
 
-                if 'tag' in locals() and 'value' in locals():
+                if value is not '' and 'tag' in locals() and 'value' in locals():
                     if tag in tag_table:
                         tag = tag_table[tag]
 
