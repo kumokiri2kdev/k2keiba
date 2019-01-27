@@ -149,6 +149,16 @@ class Util:
         return date[0], weekday[0].replace("（", "").replace("）", "")
 
     @classmethod
+    def parse_date_to_int(cls, date):
+        int_val = 0
+
+        int_val += int(re.search(r'[0-9]{4}年', date)[0].replace('年', '')) * 10000
+        int_val += int(re.search(r'[0-9]{1,2}月', date)[0].replace('月', '')) * 100
+        int_val += int(re.search(r'[0-9]{1,2}日', date)[0].replace('日', ''))
+
+        return int_val
+
+    @classmethod
     def parse_race_time(cls, time_str):
         try:
             time_str = cls.trim_clean(time_str)

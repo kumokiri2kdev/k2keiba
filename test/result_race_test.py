@@ -3,7 +3,7 @@ import logging
 sys.path.insert(0, '../')
 
 import k2kparser.result as pr
-
+import k2kparser.util as ut
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.ini',disable_existing_loggers=False )
@@ -24,4 +24,7 @@ if __name__ == '__main__':
         p = pr.ParserResultRace('/JRADB/accessS.html', race)
         race = p.parse()
 
+        val = ut.Util.parse_date_to_int(race['date'])
+        logger.info(val)
         logger.info(race)
+
