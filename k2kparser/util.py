@@ -100,8 +100,8 @@ class Util:
 
     @classmethod
     def parse_course_distance(cls, str):
-        distance = int(re.sub(r'[^0-9]', '', str))
-        course = re.sub(r'（|）','', re.search(r'（.*）', str).group(0))
+        course = re.sub(r'（|）', '', re.search(r'（.*）', str).group(0))
+        distance = int(re.sub(r'[^0-9]', '', str.replace(course, '')))
 
         return distance, course
 
