@@ -289,10 +289,14 @@ class ParserDenRace(parser.ParserPost):
             hourse['mare'] = mare_info[0].replace('母：','')
             hourse['bms'] = mare_info[-1].replace('(母の父：','').replace(')','')
 
+            # Parse Jokey Block
             soup_jokey_td = soup_tr.find('td', attrs={'class': 'jockey'})
-            hourse['hande'] = float(util.Util.trim_clean(
-                soup_jokey_td.find('p', attrs={'class': 'weight'}).getText()).replace('kg',''))
-
+            hande_value = util.Util.trim_clean(
+                soup_jokey_td.find('p', attrs={'class': 'weight'}).getText()).replace('kg', '')
+            try:
+                hourse['hande'] = float(hande_value)
+            except ValueError:
+                logger.warning('Convert Error : {}'.format(hande_value))
 
             soup_jockey = soup_jokey_td.find('p', attrs={'class': 'jockey'})
             jockey = {}
