@@ -10,8 +10,8 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.ini',disable_existing_loggers=False )
     logger = logging.getLogger(__name__)
 
-    current = 201812
-    end = 201812
+    current = 201902
+    end = 201903
 
     while current <= end:
         param = prp.ParserRaceParams.get_cname(current)

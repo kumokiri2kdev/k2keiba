@@ -228,9 +228,9 @@ param_past["1810"]="57"
 param_past["1811"]="25"
 param_past["1812"]="F3"
 param_past["1901"]="04"
+param_past["1902"]="D2"
 
 param_new = {}
-param_new["1902"]="EB"
 param_new["1903"]="B9"
 param_new["1904"]="87"
 param_new["1905"]="55"
