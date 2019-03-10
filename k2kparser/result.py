@@ -225,7 +225,8 @@ class ParserResultRace(parser.ParserPost):
 
         soup_links = soup_result.find('div', attrs={'class': 'race_related_link'})
 
-        soup_odds_link = soup_links.find('li')
+        soup_odds_links = soup_links.find_all('li')
+        soup_odds_link = soup_odds_links[-1]
         if soup_odds_link is not None:
             soup_anchor = soup_odds_link.find('a')
             if soup_anchor.has_attr('onclick'):
