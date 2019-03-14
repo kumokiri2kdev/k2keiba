@@ -278,7 +278,8 @@ class ParserResultRace(parser.ParserPost):
                     jockey['url'] = util.Util.parse_func_params(soup_anchor['onclick'])
                 except parser.ParseError as per:
                     logger.info('Anchor parse error: ' + soup_anchor.getText())
-                    horse['jockey'] = jockey
+
+            horse['jockey'] = jockey
 
             try :
                 finish = util.Util.trim_clean(soup_tr.find('td', attrs={'class': 'time'}).getText())
