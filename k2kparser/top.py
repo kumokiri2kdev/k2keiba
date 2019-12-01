@@ -28,7 +28,7 @@ class ParserTop(parser.Parser):
             logger.error('ParseError : "quick menu" not found')
             raise parser.ParseError
 
-        content = qmenu.find('div', attrs={"class": "content"})
+        content = qmenu.find('div', attrs={"class": "inner"})
         if content is None:
             raise parser.ParseError
 
