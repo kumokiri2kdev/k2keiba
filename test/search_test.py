@@ -5,8 +5,8 @@ sys.path.insert(0, '../')
 import k2kparser.search as ps
 
 
-def uma_search(key):
-    p = ps.ParserSearch('/JRADB/accessR.html', 'pw02uliD1', key)
+def uma_search(key, category='all'):
+    p = ps.ParserSearch('/JRADB/accessR.html', 'pw02uliD1', key, category)
     uma_list = p.parse()
 
     logger.info('--- Key = {} ---'.format(key))
@@ -22,3 +22,9 @@ if __name__ == '__main__':
     uma_search('アイアンミ')
 
     uma_search('ロックディス')
+
+    uma_search('/')
+
+    uma_search('アイアン', category='active')
+
+    uma_search('アイアン', category='inactive')

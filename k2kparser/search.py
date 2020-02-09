@@ -9,8 +9,15 @@ from . import parser
 logger = logging.getLogger(__name__)
 
 class ParserSearch(parser.ParserPost):
-    def __init__(self, path, param, key, **kwargs):
-        param = param + '0000' +  urllib.parse.quote(key, encoding='Shift_JISx0213')
+    def __init__(self, path, param, key, category='all', **kwargs):
+        if category == 'active':
+            aditional = '0010'
+        elif category == 'inactive':
+            aditional = '0001'
+        else:
+            aditional = '0000'
+
+        param = param + aditional +  urllib.parse.quote(key, encoding='Shift_JISx0213')
         super(ParserSearch, self).__init__(path, param, **kwargs)
 
     def parse_content(self, soup):
@@ -26,6 +33,9 @@ class ParserSearch(parser.ParserPost):
         """
 
         soup_tables = soup.find('table', attrs={'class': 'gray12'})
+
+        if soup_tables is None:
+            return []
 
         soup_tables = soup_tables.find_all('table')
 
