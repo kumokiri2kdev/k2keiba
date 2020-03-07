@@ -315,7 +315,7 @@ class ParserDenRace(parser.ParserPost):
             hourse['sex'] = sex
             hourse['hair'] = hair
 
-            race['hourses'].append(hourse)
+            race['horses'].append(hourse)
 
 
         return race
