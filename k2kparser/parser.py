@@ -44,10 +44,13 @@ class Parser:
         return self.parse_content(soup)
 
     def parse(self):
+        headers = {
+            'User-Agent': 'K2Keiba'
+        }
         if self.method == 'POST':
-            request = urllib.request.Request(self.uri, data=self.data, method='POST')
+            request = urllib.request.Request(self.uri, data=self.data, method='POST', headers=headers)
         else:
-            request = urllib.request.Request(self.uri)
+            request = urllib.request.Request(self.uri, headers=headers)
 
         with urllib.request.urlopen(request) as response:
             response_body = response.read().decode("'Shift_JISx0213'")
