@@ -218,7 +218,7 @@ class ParserDenRace(parser.ParserPost):
         soup_tbody = soup_syutsuba.find('tbody')
         soup_trs = soup_tbody.find_all('tr')
 
-        race['hourses'] = []
+        race['horses'] = []
         for soup_tr in soup_trs:
             hourse = {}
             soup_td_waku = soup_tr.find('td', attrs={'class': 'waku'})
