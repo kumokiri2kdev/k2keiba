@@ -109,7 +109,7 @@ class Util:
     def parse_odds(cls, str):
         try:
             odds = float(re.search(r'.*[0-9]\(', str).group(0).replace('(',''))
-            odds_rank = int(re.search(r'[0-9]', re.search(r'\(.*\)', str).group(0)).group(0))
+            odds_rank = int(re.search(r'[0-9]+', re.search(r'\(.*\)', str).group(0)).group(0))
         except:
             raise ValueError
 
