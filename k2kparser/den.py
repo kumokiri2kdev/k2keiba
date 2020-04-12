@@ -45,6 +45,18 @@ class ParserDenTop(parser.ParserKaisaiTop):
 
 
 class ParserDenKaisai(parser.ParserPost):
+    @classmethod
+    def get_li_text(cls, soup_parent, tag):
+        soup_li = soup_parent.find('li', attrs={'class': tag})
+        if soup_li is not None:
+            soup_span = soup_li.find('span', attrs={'class': 'txt'})
+            if soup_span is not None:
+                return soup_span.getText().strip()
+
+
+        return None
+
+
     def parse_content(self, soup):
         """ Parse content and return kaisai race list
         :param soup:
@@ -77,6 +89,21 @@ class ParserDenKaisai(parser.ParserPost):
         kaisai_list['index'] = index
         kaisai_list['place'] = place
         kaisai_list['nichisuu'] = nichisuu
+
+        soup_caption_opt = soup_caption.find('div', attrs={'class': 'opt'})
+        if soup_caption_opt is not None:
+            weather = ParserDenKaisai.get_li_text(soup_caption_opt, 'weather')
+            if weather is not None:
+                kaisai_list['weather'] = weather
+
+            durt = ParserDenKaisai.get_li_text(soup_caption_opt, 'durt')
+            if durt is not None:
+                kaisai_list['durt'] = durt
+
+            turf = ParserDenKaisai.get_li_text(soup_caption_opt, 'turf')
+            if turf is not None:
+                kaisai_list['turf'] = turf
+
         kaisai_list['races'] = []
 
         soup_tbody = soup_table.find('tbody')

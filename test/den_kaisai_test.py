@@ -19,6 +19,8 @@ if __name__ == '__main__':
 
             logger.info('日付 : '+ result['date'])
             logger.info(' {}回{}{}日'.format(result['index'], result['place'], result['nichisuu']))
+            if 'weather' in result:
+                logger.info(' 天候 : {}, 芝 : {}, ダート : {}'.format(result['weather'], result['turf'], result['durt']))
 
             for race in result['races']:
                 logger.info(' ' * 2 + '{}レース {} : {}'.format(race['index'], race['name'], race['param']['param']))
