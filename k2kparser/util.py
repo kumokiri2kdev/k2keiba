@@ -1,6 +1,7 @@
 """ Utilities for k2k_jra """
 import re
 import logging.config
+import datetime
 
 from . import parser
 
@@ -157,6 +158,28 @@ class Util:
         int_val += int(re.search(r'[0-9]{1,2}日', date)[0].replace('日', ''))
 
         return int_val
+
+    @classmethod
+    def parse_date_to_datetime(cls, date):
+        year = int(re.search(r'[0-9]{4}年', date)[0].replace('年', ''))
+        month = int(re.search(r'[0-9]{1,2}月', date)[0].replace('月', ''))
+        day = int(re.search(r'[0-9]{1,2}日', date)[0].replace('日', ''))
+
+        date = datetime.date(year, month, day)
+
+        return date
+
+    @classmethod
+    def parse_int_to_datetime(cls, date):
+        year = int(date / 10000)
+        date %= 10000
+        month = int(date / 100)
+        day = date % 100
+
+        date = datetime.date(year, month, day)
+
+        return date
+
 
     @classmethod
     def parse_race_time(cls, time_str):
