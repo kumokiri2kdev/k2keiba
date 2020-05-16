@@ -388,49 +388,52 @@ class OddsParserExacta(OddsParserBracket):
 
 class OddsParserWide(OddsParser):
     def parse_odds_content(self, soup_area):
-        soup_ul = soup_area.find('ul', attrs={'class': 'wide_list'})
-        soup_lis = soup_ul.find_all('li')
+        soup_uls = soup_area.find_all('ul', attrs={'class': 'wide_list'})
 
         odds = {}
-        for soup_li in soup_lis:
-            soup_table = soup_li.find('table')
-            tag_1 = soup_table.find('caption').getText().strip()
-            soup_trs = soup_li.find_all('tr')
-            for soup_tr in soup_trs:
-                th = soup_tr.find('th').getText().strip()
-                odds[tag_1 + '-' + th] = {}
-                soup_td = soup_tr.find('td')
 
-                soup_min = soup_td.find('span', attrs={'class': 'min'})
-                if soup_min is None:
-                    val = soup_td.getText().strip()
-                    odds[tag_1 + '-' + th]['min'] = val
-                    odds[tag_1 + '-' + th]['max'] = val
-                    continue
+        for soup_ul in soup_uls:
+            soup_lis = soup_ul.find_all('li')
 
-                min = soup_min.getText().strip()
-                if min == '':
-                    continue
-                else:
-                    try:
-                        min_val = float(min)
-                    except ValueError:
-                        logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
-                        min_val = min
+            for soup_li in soup_lis:
+                soup_table = soup_li.find('table')
+                tag_1 = soup_table.find('caption').getText().strip()
+                soup_trs = soup_li.find_all('tr')
+                for soup_tr in soup_trs:
+                    th = soup_tr.find('th').getText().strip()
+                    odds[tag_1 + '-' + th] = {}
+                    soup_td = soup_tr.find('td')
 
-                odds[tag_1 + '-' + th]['min'] = min_val
+                    soup_min = soup_td.find('span', attrs={'class': 'min'})
+                    if soup_min is None:
+                        val = soup_td.getText().strip()
+                        odds[tag_1 + '-' + th]['min'] = val
+                        odds[tag_1 + '-' + th]['max'] = val
+                        continue
 
-                max = soup_td.find('span', attrs={'class': 'max'}).getText().strip()
-                if max == '':
-                    continue
-                else:
-                    try:
-                        max_val = float(max)
-                    except ValueError:
-                        logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
-                        max_val = max
+                    min = soup_min.getText().strip()
+                    if min == '':
+                        continue
+                    else:
+                        try:
+                            min_val = float(min)
+                        except ValueError:
+                            logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
+                            min_val = min
 
-                odds[tag_1 + '-' + th]['max'] = max_val
+                    odds[tag_1 + '-' + th]['min'] = min_val
+
+                    max = soup_td.find('span', attrs={'class': 'max'}).getText().strip()
+                    if max == '':
+                        continue
+                    else:
+                        try:
+                            max_val = float(max)
+                        except ValueError:
+                            logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
+                            max_val = max
+
+                    odds[tag_1 + '-' + th]['max'] = max_val
 
 
         return odds
