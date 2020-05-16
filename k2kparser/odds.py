@@ -323,28 +323,29 @@ class OddsParserBracketQuinella(OddsParser):
 class OddsParserBracket(OddsParser):
     list_class_tag = 'umaren_list'
     def parse_odds_content(self, soup_area):
-        print(self.list_class_tag)
-        soup_ul = soup_area.find('ul', attrs={'class': self.list_class_tag})
-        soup_lis = soup_ul.find_all('li')
-
+        soup_uls = soup_area.find_all('ul', attrs={'class': self.list_class_tag})
         odds = {}
-        for soup_li in soup_lis:
-            soup_table = soup_li.find('table')
-            tag_1 = soup_table.find('caption').getText().strip()
-            soup_trs = soup_li.find_all('tr')
-            for soup_tr in soup_trs:
-                th = soup_tr.find('th').getText().strip()
-                td = soup_tr.find('td').getText().strip()
-                if td == '':
-                    continue
-                else:
-                    try:
-                        odds_val = float(td)
-                    except ValueError:
-                        logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
-                        odds_val = td
 
-                odds[tag_1 + '-' + th] = odds_val
+        for soup_ul in soup_uls:
+            soup_lis = soup_ul.find_all('li')
+
+            for soup_li in soup_lis:
+                soup_table = soup_li.find('table')
+                tag_1 = soup_table.find('caption').getText().strip()
+                soup_trs = soup_li.find_all('tr')
+                for soup_tr in soup_trs:
+                    th = soup_tr.find('th').getText().strip()
+                    td = soup_tr.find('td').getText().strip()
+                    if td == '':
+                        continue
+                    else:
+                        try:
+                            odds_val = float(td)
+                        except ValueError:
+                            logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
+                            odds_val = td
+
+                    odds[tag_1 + '-' + th] = odds_val
 
         return odds
 
