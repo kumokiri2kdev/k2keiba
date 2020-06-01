@@ -243,9 +243,9 @@ param_past["2001"]="83"
 param_past["2002"]="51"
 param_past["2003"]="1F"
 param_past["2004"]="ED"
+param_past["2005"]="BB"
 
 param_new = {}
-param_new["2005"]="D4"
 param_new["2006"]="A2"
 param_new["2007"]="70"
 param_new["2008"]="3E"
