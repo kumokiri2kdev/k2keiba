@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from . import util
 
 
-JRA_BASE_URL = 'http://www.jra.go.jp'
+JRA_BASE_URL = 'https://www.jra.go.jp'
 
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,7 @@ class Parser:
     def parse(self):
         headers = {
             'User-Agent': 'K2Keiba'
+            #'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
         }
         if self.method == 'POST':
             request = urllib.request.Request(self.uri, data=self.data, method='POST', headers=headers)
