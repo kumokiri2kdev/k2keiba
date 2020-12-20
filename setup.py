@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='k2keiba',
-    version='0.0.24ß',
+    version='0.0.26',
     packages=['k2kparser'],
     url='',
     license='free',
