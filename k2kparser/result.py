@@ -86,7 +86,8 @@ class ParserResultKaisai(parser.ParserPost):
             soup_course = soup_race.find('td', attrs={'class': 'course'})
             race['course'] = soup_course.getText()
 
-            soup_race_name = soup_race.find('td', attrs={'class': 'race_name'}).find_all('li')
+            soup_race_name_td = soup_race.find('td', attrs={'class': 'race_name'})
+            soup_race_name = soup_race_name_td.find('div').find_all('div')
             race_name = util.Util.trim_clean(soup_race_name[0].getText())
             race_cond = util.Util.trim_clean(soup_race_name[1].getText())
             if race_cond == '':

@@ -48,6 +48,7 @@ class Util:
         matched = re.search(r'\(.*\)', str)
         if matched:
             params = re.sub(r'[\(\)\']','', matched.group(0)).split(',')
+            params = [param.strip() for param in params]
             if len(params) > 1:
                 return params
             else:

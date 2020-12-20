@@ -11,10 +11,11 @@ class ParserUma(parser.ParserPost):
         ret_tbls = {}
 
         for (i, tbl) in enumerate(tbls):
-            td = tbl.find('td')
-            if td:
-                tag = util.Util.trim_clean(td.get_text())
-                if tag == '【出走レース】':
+            div = tbl.find('div', attrs={'class': 'main'})
+            if div:
+                tag = util.Util.trim_clean(div.get_text())
+                print(tag)
+                if tag == '出走レース':
                     ret_tbls['races'] = tbl
                 elif tag == '【プロフィール】':
                     ret_tbls['profile'] = tbl
@@ -46,7 +47,7 @@ class ParserUma(parser.ParserPost):
                         ret_race['params'] = params
 
             try:
-                ret_race['date'] = int(ret_race['date'].replace('.', ''))
+                ret_race['date'] = util.Util.parse_date_to_int(ret_race['date'])
             except ValueError:
                 return {}
 

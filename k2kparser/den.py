@@ -111,25 +111,31 @@ class ParserDenKaisai(parser.ParserPost):
         for soup_race in soup_races:
             race = {}
             soup_time = soup_race.find('td', attrs={'class': 'time'})
-            soup_course = soup_race.find('td', attrs={'class': 'course'})
-            soup_race_name = soup_race.find('td', attrs={'class': 'race_name'}).find_all('li')
+            soup_race_name_td = soup_race.find('td', attrs={'class': 'race_name'})
+            soup_race_name = soup_race_name_td.find('div').find_all('div')
             race_name = util.Util.trim_clean(soup_race_name[0].getText())
             race_cond = util.Util.trim_clean(soup_race_name[1].getText())
             if race_cond == '':
                 race_cond = race_name
-            soup_num = soup_race.find('td', attrs={'class': 'num'})
+
+            soup_dist_group = soup_race.find('td', attrs={'class': 'dist'})
+
+            soup_num = soup_dist_group.find('span', attrs={'class': 'num'})
             uma_num = int(soup_num.getText().replace('頭',''))
-            soup_dist = soup_race.find('td', attrs={'class': 'dist'})
-            dist = int(soup_dist.getText().replace('メートル', '').replace(',',''))
+            soup_dist = soup_dist_group.find('span', attrs={'class': 'dist'})
+            dist = int(soup_dist.getText().replace(',','').replace('m',''))
+            soup_course = soup_dist_group.find('span', attrs={'class': 'course'})
 
-            soup_anchor = soup_race.find('a')
-            if soup_anchor.has_attr('onclick'):
-                try:
-                    params = util.Util.parse_func_params(soup_anchor['onclick'])
-                except parser.ParseError as per:
-                    logger.info('Anchor parse error: ' + soup_anchor.getText())
+            soup_shutuba = soup_race.find('td', attrs={'class': 'syutsuba'})
+            soup_anchor = soup_shutuba.find('a')
+            assert soup_anchor.has_attr('onclick')
+            try:
+                params = util.Util.parse_func_params(soup_anchor['onclick'])
+            except parser.ParseError as per:
+                logger.info('Anchor parse error: ' + soup_anchor.getText())
+                assert False
 
-            soup_img = soup_anchor.find('img')
+            soup_img = soup_race.find('span').find('img')
             race_index = int(soup_img['alt'].replace('レース', ''))
 
             race['index'] = race_index

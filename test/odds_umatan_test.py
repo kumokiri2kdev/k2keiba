@@ -19,5 +19,4 @@ if __name__ == '__main__':
     for race in races:
         pow = po.OddsParserExacta('/JRADB/accessO.html', race)
         odds = pow.parse()
-
         logger.info(odds)

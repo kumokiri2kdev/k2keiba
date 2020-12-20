@@ -19,6 +19,14 @@ class ParseError(Exception):
 		pass
 
 class Parser:
+    @property
+    def base_url(self):
+        return JRA_BASE_URL
+
+    @property
+    def decoder(self):
+        return "'Shift_JISx0213'"
+
     def __init__(self, file_path, **kwargs):
         if 'data' in kwargs:
             self.method = 'POST'
@@ -28,11 +36,11 @@ class Parser:
 
         if 'base_url' in kwargs:
             self.base_url = kwargs['base_url']
-        else:
-            if 'K2K_JRA_BASE_URL' in os.environ:
-                self.base_url = os.environ['K2K_JRA_BASE_URL']
-            else:
-                self.base_url = JRA_BASE_URL
+        #else:
+            #if 'K2K_JRA_BASE_URL' in os.environ:
+            #    self.base_url = os.environ['K2K_JRA_BASE_URL']
+            #else:
+            #    self.base_url = JRA_BASE_URL
 
         self.uri = self.gen_asb_uri(file_path)
 
@@ -54,7 +62,7 @@ class Parser:
             request = urllib.request.Request(self.uri, headers=headers)
 
         with urllib.request.urlopen(request) as response:
-            response_body = response.read().decode("'Shift_JISx0213'")
+            response_body = response.read().decode(self.decoder)
 
         return self.parse_html(response_body)
 
@@ -64,7 +72,8 @@ class Parser:
 
 class ParserPost(Parser):
     def __init__(self, path, param, **kwargs):
-        param = 'cname=' + param
+        param = 'cname=' + param.replace('/', '%2F')
+        #param = urllib.parse.quote(param).replace('/', '%2F')
         super(ParserPost,self).__init__(path, data=param, **kwargs)
 
 
@@ -95,13 +104,10 @@ class ParserKaisaiTop(ParserPost, metaclass=ABCMeta):
             kaisai_info['week_day'] = weekday
             kaisai_info['kaisai'] = []
 
-            soup_div3 = soup_day.find('ul', attrs={'class': 'div3'})
-            soup_kaisai_list = soup_div3.find_all('li')
-            for soup_kaisai in soup_kaisai_list:
+            soup_kaisai_block = soup_day.find('div', attrs={'class': 'div3'})
+            soup_anchors = soup_kaisai_block.find_all('a')
+            for soup_anchor in soup_anchors:
                 kaisai_info_day = {}
-                soup_anchor = soup_kaisai.find('a')
-                if soup_anchor is None:
-                    continue
 
                 if soup_anchor.has_attr('onclick'):
                     try:
@@ -110,9 +116,10 @@ class ParserKaisaiTop(ParserPost, metaclass=ABCMeta):
                         logger.info('Anchor parse error: ' + soup_anchor.getText())
 
                 try:
-                    kaisai_param = util.Util.parse_kaisai(soup_kaisai.getText())
+                    kaisai_text = soup_anchor.getText().replace('馬番確定','')
+                    kaisai_param = util.Util.parse_kaisai(kaisai_text)
                 except ValueError:
-                    logger.info('parse_kaisai error: ' + soup_kaisai.getText())
+                    logger.info('parse_kaisai error: ' + soup_anchor.getText())
 
                 kaisai_info_day['index'] = kaisai_param[0]
                 kaisai_info_day['day'] = kaisai_param[1]
