@@ -70,7 +70,7 @@ class ParserOddsKaisai(parser.ParserPost):
         soup_races = soup_tbody.find_all('tr')
         for soup_race in soup_races:
             race = {}
-            soup_race_name = soup_race.find('td', attrs={'class': 'race_name'}).find_all('li')
+            soup_race_name = soup_race.find('td', attrs={'class': 'race_name'}).find('div').find_all('div')
             race_name = util.Util.trim_clean(soup_race_name[0].getText())
             race_cond = util.Util.trim_clean(soup_race_name[1].getText())
             if race_cond == '':
@@ -84,15 +84,15 @@ class ParserOddsKaisai(parser.ParserPost):
             race['name'] = race_name
             race['cond'] = race_cond
 
-            soup_ul = soup_race.find('ul', attrs={'class': 'btn_list'})
-            soup_lis = soup_ul.find_all('li')
+            soup_odds_link_div = soup_race.find('div', attrs={'class': 'btn_list'})
+            soup_odds_link_divs = soup_odds_link_div.find_all('div')
             odds_params = {}
-            for soup_li in soup_lis:
-                soup_anchor = soup_li.find('a')
+            for soup_odds_link in soup_odds_link_divs:
+                soup_anchor = soup_odds_link.find('a')
                 if soup_anchor is not None and soup_anchor.has_attr('onclick'):
                     try:
                         params = util.Util.parse_func_params(soup_anchor['onclick'])
-                        odds_params[soup_li['class'][0]] = params
+                        odds_params[soup_odds_link['class'][0]] = params
                     except parser.ParseError as per:
                         logger.info('Anchor parse error: ' + soup_anchor.getText())
 
