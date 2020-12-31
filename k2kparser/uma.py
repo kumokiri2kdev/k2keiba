@@ -14,7 +14,6 @@ class ParserUma(parser.ParserPost):
             div = tbl.find('div', attrs={'class': 'main'})
             if div:
                 tag = util.Util.trim_clean(div.get_text())
-                print(tag)
                 if tag == '出走レース':
                     ret_tbls['races'] = tbl
                 elif tag == '【プロフィール】':
@@ -106,14 +105,30 @@ class ParserUma(parser.ParserPost):
 
         return ret_profile
 
-    def parse_basic(self, basic):
-        ret_basic = {}
+    # def parse_basic(self, basic):
+    #     ret_basic = {}
+    #
+    #     soup_td = basic.find('td')
+    #     soup_span = soup_td.find('span')
+    #     ret_basic['name'] = util.Util.trim_clean(soup_span.get_text())
+    #
+    #     return ret_basic
 
-        soup_td = basic.find('td')
-        soup_span = soup_td.find('span')
-        ret_basic['name'] = util.Util.trim_clean(soup_span.get_text())
+    def parse_basic(self, spans):
+        ret_basic = {}
+        for span in spans:
+            opt_span = span.find('span', attrs={'class': 'opt'})
+            if opt_span is not None:
+                spans_to_be_removed = span.find_all('span')
+                for span_to_be_removed in spans_to_be_removed:
+                    span_to_be_removed.extract()
+
+                ret_basic['name'] = span.get_text()
+                break
 
         return ret_basic
+
+
 
     def parse_content(self, soup):
         """ Parse content and return parameters if exist
@@ -153,14 +168,14 @@ class ParserUma(parser.ParserPost):
                 'breeding_center': 産地
                 'origin_of_name': 馬名意味
         """
-        tbls = soup.find_all("table")
-        filtered_tbls = self.filter_tables(tbls)
 
         parsed_data = {}
 
-        if 'basic' in filtered_tbls:
-            parsed_basic = self.parse_basic(filtered_tbls['basic'])
-            parsed_data['basic'] = parsed_basic
+        spans = soup.find_all('span', attrs={'class': 'txt'})
+        parsed_data['basic'] = self.parse_basic(spans)
+
+        tbls = soup.find_all("table")
+        filtered_tbls = self.filter_tables(tbls)
 
         if 'races' in filtered_tbls:
             parsed_race = self.parse_races(filtered_tbls['races'])
