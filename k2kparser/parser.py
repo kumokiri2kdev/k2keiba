@@ -1,7 +1,9 @@
 """ Parser Base Class """
 import os
+import json
 import logging
 import urllib.request
+import urllib.error
 from abc import ABCMeta, abstractmethod
 
 from bs4 import BeautifulSoup
@@ -14,9 +16,13 @@ JRA_BASE_URL = 'https://www.jra.go.jp'
 
 logger = logging.getLogger(__name__)
 
-class ParseError(Exception):
+class ParseError(BaseException):
 	def __init__(self):
 		pass
+
+class ParseErrorHTTP(ParseError):
+    def __init__(self, code):
+        self.code = code
 
 class Parser:
     @property
@@ -61,13 +67,26 @@ class Parser:
         else:
             request = urllib.request.Request(self.uri, headers=headers)
 
-        with urllib.request.urlopen(request) as response:
-            response_body = response.read().decode(self.decoder)
+        try :
+            with urllib.request.urlopen(request) as response:
+                response_body = response.read().decode(self.decoder)
+        except urllib.error.HTTPError as e:
+            raise ParseErrorHTTP(e.code)
 
         return self.parse_html(response_body)
 
     def parse_content(self, soup):
         logger.error("Base Class parse_content must not  be called")
+
+
+class ParserJson(Parser):
+    @property
+    def decoder(self):
+        return "'utf-8'"
+
+    def parse_html(self, content):
+        json_data = json.loads(content, encoding=self.decoder)
+        return self.parse_content(json_data)
 
 
 class ParserPost(Parser):
