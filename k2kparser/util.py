@@ -57,6 +57,35 @@ class Util:
             raise parser.ParseError
 
     @classmethod
+    def convert_resul_param_as_past(cls, param):
+        if param[7] == '1':
+            return param
+
+        param_list = list(param)
+        param_list[7] = '1'
+        param_list[8] = '0'
+        param = ''.join(param_list)
+        params = param.split('/')
+        tail = '{:02X}'.format((int(params[-1], 16) + 0xff - 0x20) & 0x00ff)
+
+        return '{}/{}'.format(params[0], tail)
+
+    @classmethod
+    def is_past_result_parameter(cls, param):
+        if param[7] == '0' and param[8] == '1':
+            return True
+
+        return False
+
+    @classmethod
+    def encode_slash(cls, param):
+        return param.replace('/', '%2F')
+
+    @classmethod
+    def decode_slash(cls, param):
+        return param.replace('%2F', '/')
+
+    @classmethod
     def trim_clean(cls, str):
         rt = str.replace('\n','').strip()
         return rt
