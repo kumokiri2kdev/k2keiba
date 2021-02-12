@@ -118,15 +118,15 @@ class ParserResultRace(parser.ParserPost):
     def parse_pay_off(self, soup):
         pay_off = []
 
-        soup_lines = soup.find_all('span', attrs={'class': 'line'})
+        soup_lines = soup.find_all('div', attrs={'class': 'line'})
         for soup_line in soup_lines:
             pay_off_unit = {}
-            pay_off_unit['tag'] = util.Util.trim_clean(soup_line.find('span', attrs={'class': 'num'}).getText())
+            pay_off_unit['tag'] = util.Util.trim_clean(soup_line.find('div', attrs={'class': 'num'}).getText())
             if pay_off_unit['tag'] == '':
                 return []
             pay_off_unit['price'] = \
-                int(soup_line.find('span', attrs={'class': 'yen'}).getText().replace('円','').replace(',',''))
-            pay_off_unit['fav'] = int(soup_line.find('span', attrs={'class': 'pop'}).getText().replace('番人気',''))
+                int(soup_line.find('div', attrs={'class': 'yen'}).getText().replace('円','').replace(',',''))
+            pay_off_unit['fav'] = int(soup_line.find('div', attrs={'class': 'pop'}).getText().replace('番人気',''))
             pay_off.append(pay_off_unit)
 
         return pay_off
