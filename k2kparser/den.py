@@ -213,7 +213,7 @@ class ParserDenRace(parser.ParserPost):
 
         soup_grade = soup_name.find('span', attrs={'class': 'grade_icon'})
         if soup_grade is None:
-            logger.info('None Grade Race')
+            logger.debug('None Grade Race')
         else:
             race['grade'] = soup_grade.find('img')['alt']
 

@@ -21,6 +21,9 @@ class ParserTokubetuTop(parser.ParserPost):
             soup_rcs = soup_date.find_all('div', attrs={'class': 'rc'})
             for soup_rc in soup_rcs:
                 soup_kaisai = soup_rc.find('h3')
+                if soup_kaisai == None:
+                    continue
+
                 ret_races = []
                 soup_links = soup_rc.find_all('li')
                 for soup_link in soup_links:
