@@ -10,20 +10,21 @@ logger = logging.getLogger(__name__)
 
 
 class ParserResultTop(den.ParserDenTop):
-    pass
-    # parse_content output
-    """ Parse content and return parameters if exist
-    :param soup:
-    :return: Array of Dict of Kaisai
-        'date': 日付
-        'weekday': 曜日
-        'kaisai': Array of Kaisai information
-            'index': 開催回数
-            'day': 開催日（何日目）
-            'place': 競馬場
-            'params': URL and Post parameter
+    def __init__(self, path='/JRADB/accessS.html', param='pw01sli00/AF'):
+        super().__init__(path, param)
+        # parse_content output
+        """ Parse content and return parameters if exist
+        :param soup:
+        :return: Array of Dict of Kaisai
+            'date': 日付
+            'weekday': 曜日
+            'kaisai': Array of Kaisai information
+                'index': 開催回数
+                'day': 開催日（何日目）
+                'place': 競馬場
+                'params': URL and Post parameter
 
-    """
+        """
 
 class ParserResultKaisaiList(ParserResultTop):
 
