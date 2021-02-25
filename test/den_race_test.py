@@ -18,7 +18,7 @@ if __name__ == '__main__':
     args = sys.argv
 
     if len(args) < 3:
-        p = pd.ParserDenTop('/JRADB/accessD.html', 'pw01dli00/F3')
+        p = pd.ParserDenTop()
         kaisai_list = p.parse()
 
         for kaisai in kaisai_list:

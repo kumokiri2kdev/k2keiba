@@ -9,6 +9,9 @@ from . import parser
 logger = logging.getLogger(__name__)
 
 class ParserDenTop(parser.ParserKaisaiTop):
+    def __init__(self, path='/JRADB/accessD.html', param='pw01dli00/F3'):
+        super().__init__(path, param)
+
     def get_base_soup(self, soup):
         soup_area = soup.find('div', attrs={'id': 'contentsBody'})
 
