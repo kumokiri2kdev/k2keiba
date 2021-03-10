@@ -68,7 +68,7 @@ class ParserUma(parser.ParserPost):
         return ret
 
     def parse_profile(self, profile):
-        soup_trs = profile.find_all('tr')
+        soup_lis = profile.find_all('li')
         ret_profile = {}
         tag_table = {
             '父': 'father',
@@ -86,33 +86,17 @@ class ParserUma(parser.ParserPost):
             '馬名意味': 'origin_of_name'
         }
 
-        for soup_tr in soup_trs:
-            soup_tds = soup_tr.find_all('td')
+        for soup_li in soup_lis:
+            soup_dt = soup_li.find('dt')
+            tag = util.Util.trim_clean(soup_dt.get_text())
+            soup_dd = soup_li.find('dd')
+            value = util.Util.trim_clean(soup_dd.get_text())
 
-            for i in range(0, len(soup_tds) - len(soup_tds) % 2, 2):
-                if len(soup_tds) > i:
-                    tag = util.Util.trim_clean(soup_tds[i].get_text())
-                if len(soup_tds) > (i + 1):
-                    value = util.Util.trim_clean(soup_tds[i + 1].get_text())
+            if tag in tag_table:
+                ret_profile[tag_table[tag]] = value
 
-                if value is not '' and 'tag' in locals() and 'value' in locals():
-                    if tag in tag_table:
-                        tag = tag_table[tag]
-
-                    ret_profile[tag] = value
-                    del (tag)
-                    del (value)
 
         return ret_profile
-
-    # def parse_basic(self, basic):
-    #     ret_basic = {}
-    #
-    #     soup_td = basic.find('td')
-    #     soup_span = soup_td.find('span')
-    #     ret_basic['name'] = util.Util.trim_clean(soup_span.get_text())
-    #
-    #     return ret_basic
 
     def parse_basic(self, spans):
         ret_basic = {}
@@ -174,6 +158,9 @@ class ParserUma(parser.ParserPost):
         spans = soup.find_all('span', attrs={'class': 'txt'})
         parsed_data['basic'] = self.parse_basic(spans)
 
+        soup_profile = soup.find('div', attrs={'class': 'profile'})
+        parsed_data['profile'] = self.parse_profile(soup_profile)
+
         tbls = soup.find_all("table")
         filtered_tbls = self.filter_tables(tbls)
 
@@ -181,9 +168,6 @@ class ParserUma(parser.ParserPost):
             parsed_race = self.parse_races(filtered_tbls['races'])
             parsed_data['races'] = parsed_race
 
-        if 'profile' in filtered_tbls:
-            parsed_profile = self.parse_profile(filtered_tbls['profile'])
-            parsed_data['profile'] = parsed_profile
 
         return parsed_data
 
