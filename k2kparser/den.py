@@ -101,7 +101,8 @@ class ParserDenKaisai(parser.ParserPost):
 
             durt = ParserDenKaisai.get_li_text(soup_caption_opt, 'durt')
             if durt is not None:
-                kaisai_list['durt'] = durt
+                kaisai_list['dirt'] = durt
+                # JRA contents might have typo.
 
             turf = ParserDenKaisai.get_li_text(soup_caption_opt, 'turf')
             if turf is not None:
@@ -134,9 +135,35 @@ class ParserDenKaisai(parser.ParserPost):
             assert soup_anchor.has_attr('onclick')
             try:
                 params = util.Util.parse_func_params(soup_anchor['onclick'])
+                race['param'] = util.Util.format_params(params)
             except parser.ParseError as per:
                 logger.info('Anchor parse error: ' + soup_anchor.getText())
                 assert False
+
+            soup_odds = soup_race.find('td', attrs={'class': 'odds'})
+            if soup_odds is not None:
+                soup_anchor = soup_odds.find('a')
+                if soup_anchor is not None:
+                    assert soup_anchor.has_attr('onclick')
+                    try:
+                        params = util.Util.parse_func_params(soup_anchor['onclick'])
+                        race['odds'] = util.Util.format_params(params)
+                    except parser.ParseError as per:
+                        logger.info('Anchor parse error: ' + soup_anchor.getText())
+                        assert False
+
+            soup_result = soup_race.find('td', attrs={'class': 'result'})
+            if soup_result is not None:
+                soup_anchor = soup_result.find('a')
+                if soup_anchor is not None:
+                    assert soup_anchor.has_attr('onclick')
+                    try:
+                        params = util.Util.parse_func_params(soup_anchor['onclick'])
+                        race['result'] = util.Util.format_params(params)
+                    except parser.ParseError as per:
+                        logger.info('Anchor parse error: ' + soup_anchor.getText())
+                        assert False
+
 
             soup_img = soup_race.find('span').find('img')
             race_index = int(soup_img['alt'].replace('レース', ''))
@@ -148,7 +175,6 @@ class ParserDenKaisai(parser.ParserPost):
             race['cond'] = race_cond
             race['uma_num'] = uma_num
             race['dist'] = dist
-            race['param'] = util.Util.format_params(params)
             kaisai_list['races'].append(race)
 
         return kaisai_list
