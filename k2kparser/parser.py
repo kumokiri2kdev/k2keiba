@@ -73,7 +73,9 @@ class Parser:
         except urllib.error.HTTPError as e:
             raise ParseErrorHTTP(e.code)
 
-        return self.parse_html(response_body)
+        json_data = self.parse_html(response_body)
+
+        return json_data
 
     def parse_content(self, soup):
         logger.error("Base Class parse_content must not  be called")

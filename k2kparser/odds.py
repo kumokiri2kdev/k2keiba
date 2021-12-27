@@ -20,6 +20,9 @@ exchange_table = {
 }
 
 class ParserOddsTop(parser.ParserKaisaiTop):
+    def __init__(self, path='/JRADB/accessD.html', param='pw15oli00/6D'):
+        super().__init__(path, param)
+
     def get_base_soup(self, soup):
         soup_area = soup.find('div', attrs={'id': 'contentsBody'})
         soup_thisweek = soup_area.find('div', attrs={'class': 'thisweek'})

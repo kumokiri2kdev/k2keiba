@@ -130,6 +130,14 @@ class Util:
         return date[0], weekday[0].replace("（", "").replace("）", "")
 
     @classmethod
+    def parse_date_mmdd(cls, date):
+        kaisai = date.strip()
+        date = re.search(r'[0-9]{1,2}月[0-9]{1,2}日', kaisai)
+
+        return date[0]
+
+
+    @classmethod
     def parse_course_distance(cls, str):
         course = re.sub(r'（|）', '', re.search(r'（.*）', str).group(0))
         distance = int(re.sub(r'[^0-9]', '', str.replace(course, '')))
@@ -176,6 +184,8 @@ class Util:
         kaisai = kaisai.strip()
         date = re.search(r'[0-9]{4}年[0-9]{1,2}月[0-9]{1,2}日', kaisai)
         weekday = re.search(r'（[月火水木金土日]）', kaisai)
+        if weekday is None:
+            weekday = re.search(r'（[月火水木金土日]曜）', kaisai)
 
         return date[0], weekday[0].replace("（", "").replace("）", "")
 
@@ -198,6 +208,20 @@ class Util:
         date = datetime.date(year, month, day)
 
         return date
+
+    @classmethod
+    def parse_date_mmdd_to_datetime(cls, date):
+        date = date.strip()
+        year = datetime.datetime.now(
+            datetime.timezone(datetime.timedelta(hours=9))
+        ).year
+        month = int(re.search(r'[0-9]{1,2}月', date)[0].replace('月', ''))
+        day = int(re.search(r'[0-9]{1,2}日', date)[0].replace('日', ''))
+
+        date = datetime.date(year, month, day)
+
+        return date
+
 
     @classmethod
     def parse_int_to_datetime(cls, date):

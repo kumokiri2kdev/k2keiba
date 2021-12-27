@@ -250,22 +250,21 @@ param_past["2008"]="25"
 param_past["2009"]="F3"
 param_past["2010"]="62"
 param_past["2011"]="30"
-param_past["2012"]="FE";
+param_past["2012"]="FE"
+param_past["2101"]="0F"
+param_past["2102"]="DD"
+param_past["2103"]="AB"
+param_past["2104"]="79"
+param_past["2105"]="47"
+param_past["2106"]="15"
+param_past["2107"]="E3"
+param_past["2108"]="B1"
+param_past["2109"]="7F"
+param_past["2110"]="EE"
+param_past["2111"]="BC"
 
 param_new = {}
-
-param_new["2101"]="28";
-param_new["2102"]="F6";
-param_new["2103"]="C4";
-param_new["2104"]="92";
-param_new["2105"]="60";
-param_new["2106"]="2E";
-param_new["2107"]="FC";
-param_new["2108"]="CA";
-param_new["2109"]="98";
-param_new["2110"]="07";
-param_new["2111"]="D5";
-param_new["2112"]="A3";
+param_new["2112"]="A3"
 
 
 class ParserRaceParams:

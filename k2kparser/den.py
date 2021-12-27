@@ -20,7 +20,7 @@ class ParserDenTop(parser.ParserKaisaiTop):
         return soup_main
 
     def parse_addtionl_in_day(self, soup_day, kaisai_info):
-        soup_win5 = soup_day.find('ul', attrs={'class': 'win5'})
+        soup_win5 = soup_day.find('div', attrs={'class': 'win5'})
         if soup_win5 is not None:
             soup_anchor = soup_win5.find('a')
             if soup_anchor is not None:
