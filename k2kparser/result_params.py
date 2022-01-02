@@ -262,9 +262,23 @@ param_past["2108"]="B1"
 param_past["2109"]="7F"
 param_past["2110"]="EE"
 param_past["2111"]="BC"
+param_past["2112"]="8A"
 
 param_new = {}
-param_new["2112"]="A3"
+param_new["2201"]="B4"
+param_new["2202"]="82"
+param_new["2203"]="50"
+param_new["2204"]="1E"
+param_new["2205"]="EC"
+param_new["2206"]="BA"
+param_new["2207"]="88"
+param_new["2208"]="56"
+param_new["2209"]="24"
+param_new["2210"]="93"
+param_new["2211"]="61"
+param_new["2212"]="2F"
+
+
 
 
 class ParserRaceParams:
