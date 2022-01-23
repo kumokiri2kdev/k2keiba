@@ -108,6 +108,32 @@ class ParserWin5Kaisai(parser.ParserPost):
                             logger.debug('Total Bet Price is empty ? : ' + soup_td.get_text())
 
     @classmethod
+    def parse_time_in_dl(cls, soup_content_dl):
+        soup_dd = soup_content_dl.find('dd')
+        if soup_dd is not None:
+            dd_text = soup_dd.get_text()
+        else:
+            return None
+
+        return dd_text
+
+    @classmethod
+    def parse_win5_closingtime(cls, soup_content_body, ret):
+        soup_closingtime = soup_content_body.find('div', attrs={'class': 'closing_time'})
+        if soup_closingtime is not None:
+            soup_left = soup_closingtime.find('div', attrs={'class': 'left'})
+            if soup_left is not None:
+                closingtime_pat = cls.parse_time_in_dl(soup_left)
+                if closingtime_pat is not None:
+                    ret['closing_time_pat'] = closingtime_pat
+
+            soup_right = soup_closingtime.find('div', attrs={'class': 'right'})
+            if soup_right is not None:
+                closingtime_direct = cls.parse_time_in_dl(soup_right)
+                if closingtime_direct is not None:
+                    ret['closing_time_direct'] = cls.parse_time_in_dl(soup_right)
+
+    @classmethod
     def parse_win5_data_unit(cls, soup_content_body, ret):
         soup_data_units = soup_content_body.find_all('div', attrs={'class': 'win5_data_unit'})
 
@@ -300,6 +326,7 @@ class ParserWin5Kaisai(parser.ParserPost):
         soup_table = soup_result.find('table')
         self.parse_win5_result(soup_table, ret)
 
+        self.parse_win5_closingtime(soup_content_body, ret)
         #soup_data_units = soup_content_body.find_all('div', attrs={'class': 'win5_data_unit'})
         self.parse_win5_data_unit(soup_content_body, ret)
 
