@@ -249,3 +249,22 @@ class Util:
             raise UtilError
 
         return time_sec
+
+    @classmethod
+    def parse_timestr_to_datetime(clscls, time_str, date=None):
+        if date is None:
+            date = datetime.datetime.now(
+                datetime.timezone(datetime.timedelta(hours=9))
+            ).date()
+        hour_segs = re.search(r'[0-9]{1,2}時', time_str)
+        if hour_segs is None:
+            return None
+        hour = int(hour_segs[0].replace('時', ''))
+
+        minute_seg = re.search(r'[0-9]{1,2}分', time_str)
+        minute = int(minute_seg[0].replace('分', ''))
+
+        return datetime.datetime(year=date.year, month=date.month, day=date.day, hour=hour, minute=minute)
+
+
+
