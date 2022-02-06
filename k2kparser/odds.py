@@ -165,6 +165,9 @@ class OddsParser(parser.ParserPost, metaclass=ABCMeta):
         soup_reflresh = soup_area.find('div', attrs={'class': 'refresh_line'})
         if soup_reflresh:
             odds['refresh'] = util.Util.trim_clean(soup_reflresh.getText())
+            soup_time = soup_reflresh.find('div', attrs={'class': 'time'})
+            if soup_time:
+                odds['time'] = util.Util.trim_clean(soup_time.getText())
 
         return odds
 
