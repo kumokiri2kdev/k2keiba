@@ -262,6 +262,8 @@ class Util:
         hour = int(hour_segs[0].replace('時', ''))
 
         minute_seg = re.search(r'[0-9]{1,2}分', time_str)
+        if minute_seg is None:
+            return None
         minute = int(minute_seg[0].replace('分', ''))
 
         return datetime.datetime(year=date.year, month=date.month, day=date.day, hour=hour, minute=minute)
