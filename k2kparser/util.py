@@ -222,6 +222,18 @@ class Util:
 
         return date
 
+    @classmethod
+    def parse_date_mmdd_to_int(cls, date, year=None):
+        if year is None:
+            year = datetime.datetime.now(
+                datetime.timezone(datetime.timedelta(hours=9))
+            ).year
+
+        int_val = year * 10000
+        int_val += int(re.search(r'[0-9]{1,2}月', date)[0].replace('月', '')) * 100
+        int_val += int(re.search(r'[0-9]{1,2}日', date)[0].replace('日', ''))
+
+        return int_val
 
     @classmethod
     def parse_int_to_datetime(cls, date):
