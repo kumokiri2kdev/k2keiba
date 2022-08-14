@@ -264,21 +264,19 @@ param_past["2110"]="EE"
 param_past["2111"]="BC"
 param_past["2112"]="8A"
 param_past["2201"]="9B"
+param_past["2202"]="69"
+param_past["2203"]="37"
+param_past["2204"]="05"
+param_past["2205"]="D3"
+param_past["2206"]="A1"
+param_past["2207"]="6F"
 
 param_new = {}
-param_new["2202"]="82"
-param_new["2203"]="50"
-param_new["2204"]="1E"
-param_new["2205"]="EC"
-param_new["2206"]="BA"
-param_new["2207"]="88"
 param_new["2208"]="56"
 param_new["2209"]="24"
 param_new["2210"]="93"
 param_new["2211"]="61"
 param_new["2212"]="2F"
-
-
 
 
 class ParserRaceParams:
@@ -300,3 +298,8 @@ class ParserRaceParams:
             return False
 
         return True
+
+
+'''
+https://www.jra.go.jp/JRADB/accessS.html
+'''
