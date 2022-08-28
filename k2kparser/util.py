@@ -110,6 +110,12 @@ class Util:
         return {'url': params[0], 'param': params[1]}
 
     @classmethod
+    def format_params2(cls, params):
+        segs = params.split('?')
+        param = segs[1].split('=')
+        return {'url': segs[0], 'param': param[1]}
+
+    @classmethod
     def parse_kaisai_date(cls, kaisai):
         kaisai = kaisai.strip()
         date = re.search(r'[0-9]{4}年[0-9]{1,2}月[0-9]{1,2}日', kaisai)

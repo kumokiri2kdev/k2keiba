@@ -132,13 +132,8 @@ class ParserDenKaisai(parser.ParserPost):
 
             soup_shutuba = soup_race.find('td', attrs={'class': 'syutsuba'})
             soup_anchor = soup_shutuba.find('a')
-            assert soup_anchor.has_attr('onclick')
-            try:
-                params = util.Util.parse_func_params(soup_anchor['onclick'])
-                race['param'] = util.Util.format_params(params)
-            except parser.ParseError as per:
-                logger.info('Anchor parse error: ' + soup_anchor.getText())
-                assert False
+            race['param'] = util.Util.format_params2(soup_anchor['href'])
+
 
             soup_odds = soup_race.find('td', attrs={'class': 'odds'})
             if soup_odds is not None:
@@ -156,16 +151,9 @@ class ParserDenKaisai(parser.ParserPost):
             if soup_result is not None:
                 soup_anchor = soup_result.find('a')
                 if soup_anchor is not None:
-                    assert soup_anchor.has_attr('onclick')
-                    try:
-                        params = util.Util.parse_func_params(soup_anchor['onclick'])
-                        race['result'] = util.Util.format_params(params)
-                    except parser.ParseError as per:
-                        logger.info('Anchor parse error: ' + soup_anchor.getText())
-                        assert False
+                    race['result'] = util.Util.format_params2(soup_anchor['href'])
 
-
-            soup_img = soup_race.find('span').find('img')
+            soup_img = soup_race.find('th', attrs={'class': 'race_num'}).find('img')
             race_index = int(soup_img['alt'].replace('レース', ''))
 
             race['index'] = race_index

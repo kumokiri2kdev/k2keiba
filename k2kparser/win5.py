@@ -25,7 +25,7 @@ class ParserWin5Filter(parser.ParserPost):
         ret['name'] = element.find('span', attrs={'class': 'name'}).get_text().strip()
 
         anchor = element.find('a')
-        params = util.Util.parse_func_params(anchor['onclick'])
+        params = util.Util.format_params2(anchor['href'])
 
         ret['url'] = params
 
@@ -59,7 +59,7 @@ class ParserWin5Filter(parser.ParserPost):
 
         winner = element.find('div', attrs={'class': 'name'})
         anchor = winner.find('a')
-        params = util.Util.parse_func_params(anchor['onclick'])
+        params = util.Util.format_params2(anchor['href'])
         horse = {}
         horse['url'] = params
         horse['name'] = anchor.get_text()
