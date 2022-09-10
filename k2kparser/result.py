@@ -256,9 +256,9 @@ class ParserResultRace(parser.ParserPost):
             soup_name = soup_tr.find('td', attrs={'class': 'horse'})
             horse['name'] = util.Util.trim_clean(soup_name.getText())
             soup_anchor = soup_name.find('a')
-            if soup_anchor is not None and soup_anchor.has_attr('onclick'):
+            if soup_anchor is not None and soup_anchor.has_attr('href'):
                 try:
-                    horse['url'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                    horse['url'] = util.Util.format_params2(soup_anchor['href'])
                 except parser.ParseError as per:
                     logger.info('Anchor parse error: ' + soup_anchor.getText())
 
