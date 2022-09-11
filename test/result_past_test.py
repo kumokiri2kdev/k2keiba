@@ -10,7 +10,7 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.ini',disable_existing_loggers=False )
     logger = logging.getLogger(__name__)
 
-    current = 202201
+    current = 202208
     end = 202208
 
     while current <= end:
@@ -22,13 +22,13 @@ if __name__ == '__main__':
         logger.info(days)
         for day in days:
             for kaisai in day['kaisai']:
-                logger.info(kaisai['param'])
-                prk = pr.ParserResultKaisai(kaisai['param']['url'], kaisai['param']['param'])
+                logger.info(kaisai['link'])
+                prk = pr.ParserResultKaisai(kaisai['link']['url'], kaisai['link']['param'])
                 races = prk.parse()
                 logger.info(races)
                 for race in races['races']:
-                    logger.info('{}, {}'.format(race['param']['url'], race['param']['param']))
-                    prr = pr.ParserResultRace(race['param']['url'], race['param']['param'])
+                    logger.info('{}, {}'.format(race['link']['url'], race['link']['param']))
+                    prr = pr.ParserResultRace(race['link']['url'], race['link']['param'])
                     race = prr.parse()
 
                     logger.info(race)

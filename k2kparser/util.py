@@ -50,7 +50,7 @@ class Util:
             params = re.sub(r'[\(\)\']','', matched.group(0)).split(',')
             params = [param.strip() for param in params]
             if len(params) > 1:
-                return params
+                return Util.format_params(params)
             else:
                 raise parser.ParseError
         else:

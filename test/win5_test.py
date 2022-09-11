@@ -13,11 +13,11 @@ if __name__ == '__main__':
     kaisai_list = p.parse()
 
     for kaisai in kaisai_list:
-        if 'win5' in kaisai:
-            url = kaisai['win5']
-            while url is not None:
-                logger.info('WIN5 : ' + url[1])
-                p = pw.ParserWin5Kaisai(url[0], url[1])
+        if 'win5_link' in kaisai:
+            link = kaisai['win5_link']
+            while link is not None:
+                logger.info('WIN5 : ' + link['param'])
+                p = pw.ParserWin5Kaisai(link['url'], link['param'])
                 win5 = p.parse()
                 logger.info(win5)
-                url = win5['prev_url'] if 'prev_url' in win5 else None
+                link = win5['prev_url'] if 'prev_url' in win5 else None

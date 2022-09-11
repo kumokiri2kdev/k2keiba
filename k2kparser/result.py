@@ -75,7 +75,7 @@ class ParserResultKaisai(parser.ParserPost):
             soup_shutuba = soup_race.find('th', attrs={'class': 'race_num'})
 
             soup_anchor = soup_shutuba.find('a')
-            race['param'] = util.Util.format_params2(soup_anchor['href'])
+            race['link'] = util.Util.format_params2(soup_anchor['href'])
 
             soup_img = soup_anchor.find('img')
             race_index = int(soup_img['alt'].replace('レース', ''))
@@ -231,7 +231,7 @@ class ParserResultRace(parser.ParserPost):
             soup_anchor = soup_odds_link.find('a')
             if soup_anchor.has_attr('onclick'):
                 try:
-                    race['odds'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                    race['odds_link'] = util.Util.parse_func_params(soup_anchor['onclick'])
                 except parser.ParseError as per:
                     logger.info('Anchor parse error: ' + soup_anchor.getText())
 
@@ -258,7 +258,7 @@ class ParserResultRace(parser.ParserPost):
             soup_anchor = soup_name.find('a')
             if soup_anchor is not None and soup_anchor.has_attr('href'):
                 try:
-                    horse['url'] = util.Util.format_params2(soup_anchor['href'])
+                    horse['link'] = util.Util.format_params2(soup_anchor['href'])
                 except parser.ParseError as per:
                     logger.info('Anchor parse error: ' + soup_anchor.getText())
 
@@ -275,7 +275,7 @@ class ParserResultRace(parser.ParserPost):
             soup_anchor = soup_jockey.find('a')
             if soup_anchor is not None and soup_anchor.has_attr('onclick'):
                 try:
-                    jockey['url'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                    jockey['link'] = util.Util.parse_func_params(soup_anchor['onclick'])
                 except parser.ParseError as per:
                     logger.info('Anchor parse error: ' + soup_anchor.getText())
 
@@ -330,7 +330,7 @@ class ParserResultRace(parser.ParserPost):
             soup_anchor = soup_trainer.find('a')
             if soup_anchor is not None and soup_anchor.has_attr('onclick'):
                 try:
-                    trainer['url'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                    trainer['link'] = util.Util.parse_func_params(soup_anchor['onclick'])
                 except parser.ParseError as per:
                     logger.info('Anchor parse error: ' + soup_anchor.getText())
 

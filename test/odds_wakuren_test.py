@@ -1,5 +1,6 @@
 import sys
 import logging
+import pprint
 sys.path.insert(0, '../')
 
 import k2kparser.odds as po
@@ -20,3 +21,5 @@ if __name__ == '__main__':
         odds = pow.parse()
 
         logger.info(odds)
+        pprint.pprint(odds)
+

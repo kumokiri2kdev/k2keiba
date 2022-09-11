@@ -145,7 +145,7 @@ class ParserKaisaiTop(ParserPost, metaclass=ABCMeta):
                 kaisai_info_day['index'] = kaisai_param[0]
                 kaisai_info_day['day'] = kaisai_param[1]
                 kaisai_info_day['place'] = kaisai_param[2]
-                kaisai_info_day['param'] = util.Util.format_params(params)
+                kaisai_info_day['link'] = params
 
                 kaisai_info['kaisai'].append(kaisai_info_day)
 

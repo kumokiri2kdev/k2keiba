@@ -42,26 +42,26 @@ class ParserTop(parser.Parser):
                 tag = ''
                 try :
                     params = util.Util.parse_func_params(anchor['onclick'])
-                    if params[0].endswith('accessI.html'):
+                    if params['url'].endswith('accessI.html'):
                         # 開催情報
                         tag = 'kaisai'
-                    elif params[0].endswith('accessD.html'):
+                    elif params['url'].endswith('accessD.html'):
                         # 出馬表
                         tag = 'shutuba'
-                    elif params[0].endswith('accessO.html'):
+                    elif params['url'].endswith('accessO.html'):
                         # オッズ
                         tag = 'odds'
-                    elif params[0].endswith('accessH.html'):
+                    elif params['url'].endswith('accessH.html'):
                         # 払い戻し
                         tag = 'haraimodoshi'
-                    elif params[0].endswith('accessS.html'):
+                    elif params['url'].endswith('accessS.html'):
                         # レース結果
                         tag = 'result'
-                    elif params[0].endswith('accessT.html'):
+                    elif params['url'].endswith('accessT.html'):
                         # 特別レース登録馬
                         tag = 'tokubetu'
                     else:
-                        logger.warning('Unknown URL: ' + params[0])
+                        logger.warning('Unknown URL: ' + params['url'])
                         continue
                 except parser.ParseError:
                     logger.debug('Anchor parse error: ' + anchor.getText())
@@ -69,13 +69,13 @@ class ParserTop(parser.Parser):
 
                 param_list.append({
                     'tag': tag,
-                    'params': util.Util.format_params(params)
+                    'link': params
                 })
 
         if len(param_list) > 0:
             param_list.append({
                 'tag': 'search',
-                'params': {
+                'link': {
                     'url': '/JRADB/accessR.html',
                     'param': 'pw02uliD1'
                 }

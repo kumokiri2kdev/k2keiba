@@ -23,11 +23,11 @@ if __name__ == '__main__':
 
         for kaisai in kaisai_list:
             for day in kaisai['kaisai']:
-                pk = pd.ParserDenKaisai(day['param']['url'], day['param']['param'])
+                pk = pd.ParserDenKaisai(day['link']['url'], day['link']['param'])
                 result = pk.parse()
 
                 for race in result['races']:
-                    pr = pd.ParserDenRace('/JRADB/accessD.html', race['param']['param'])
+                    pr = pd.ParserDenRace('/JRADB/accessD.html', race['link']['param'])
                     race = pr.parse()
                     print_race(race)
 

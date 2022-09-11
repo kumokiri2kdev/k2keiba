@@ -61,7 +61,7 @@ class ParserSearch(parser.ParserPost):
                     soup_anchor = soup_name.find('a')
                     if soup_anchor.has_attr('onclick'):
                         try:
-                            uma['param'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                            uma['link'] = util.Util.parse_func_params(soup_anchor['onclick'])
                         except parser.ParseError as per:
                             logger.info('Anchor parse error: ' + soup_anchor.getText())
 

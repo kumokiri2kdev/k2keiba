@@ -42,9 +42,7 @@ class ParserUma(parser.ParserPost):
                 if tag == 'name':
                     anchor = td.find("a")
                     if anchor:
-                    #     params = util.Util.parse_func_params(anchor['onclick'])
-                    #     ret_race['params'] = params
-                        ret_race['params'] = util.Util.format_params2(anchor['href'])
+                        ret_race['link'] = util.Util.format_params2(anchor['href'])
             try:
                 ret_race['date'] = util.Util.parse_date_to_int(ret_race['date'])
             except ValueError:

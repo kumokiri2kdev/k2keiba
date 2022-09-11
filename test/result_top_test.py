@@ -12,16 +12,17 @@ if __name__ == '__main__':
 
     p = pr.ParserResultTop()
     days = p.parse()
+
     for kaisai_list in days:
         logger.info(kaisai_list['date'])
         for kaisai in kaisai_list['kaisai']:
-            logger.info(kaisai['param'])
-            prk = pr.ParserResultKaisai(kaisai['param']['url'], kaisai['param']['param'])
+            logger.info(kaisai['link'])
+            prk = pr.ParserResultKaisai(kaisai['link']['url'], kaisai['link']['param'])
             races = prk.parse()
             logger.info(races)
             for race in races['races']:
-                logger.info('{}, {}'.format(race['param']['url'], race['param']['param']))
-                prr = pr.ParserResultRace(race['param']['url'], race['param']['param'])
+                logger.info('{}, {}'.format(race['link']['url'], race['link']['param']))
+                prr = pr.ParserResultRace(race['link']['url'], race['link']['param'])
                 race = prr.parse()
                 pprint.pprint(race)
                 #logger.info(race)

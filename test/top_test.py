@@ -1,6 +1,7 @@
 """ Test Code for ParserTop class. """
 import sys
 import logging
+import pprint
 sys.path.insert(0, '../')
 
 import k2kparser.parser as pr
@@ -18,4 +19,6 @@ if __name__ == '__main__':
         exit(1)
 
     for item in params:
-        logger.info('{} : {}'.format(item['tag'], item['params']))
+        logger.info('{} : {}'.format(item['tag'], item['link']))
+
+    pprint.pprint(params)
