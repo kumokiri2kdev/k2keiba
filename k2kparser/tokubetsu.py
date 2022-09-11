@@ -46,7 +46,7 @@ class ParserTokubetuTop(parser.ParserPost):
                         'class': soup_class.get_text(),
                         'course': soup_distance.get_text(),
                         'condition': soup_cap.get_text(),
-                        'params': params
+                        'link': params
                     })
                 ret_kaisai_list.append({
                     'kaisai': soup_kaisai.get_text(),
@@ -75,9 +75,9 @@ class ParserTokubetuRace(parser.ParserPost):
                 for soup_tr in soup_trs:
                     soup_horse = soup_tr.find('td', attrs={'class': 'horse'})
                     soup_anchor = soup_horse.find('a')
-                    if soup_anchor is not None and soup_anchor.has_attr('onclick'):
+                    if soup_anchor is not None and soup_anchor.has_attr('href'):
                         try:
-                            params = util.Util.parse_func_params(soup_anchor['onclick'])
+                            params = util.Util.format_params2(soup_anchor['href'])
                         except parser.ParseError as per:
                             logger.info('Anchor parse error: ' + soup_anchor.getText())
 
@@ -85,7 +85,7 @@ class ParserTokubetuRace(parser.ParserPost):
 
                     horses.append({
                         'name': soup_horse.get_text(),
-                        'url': params,
+                        'link': params,
                         'hande': soup_weight.get_text()
                     })
 
