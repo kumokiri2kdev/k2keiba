@@ -270,14 +270,25 @@ param_past["2204"]="05"
 param_past["2205"]="D3"
 param_past["2206"]="A1"
 param_past["2207"]="6F"
+param_past["2208"]="3D"
+param_past["2209"]="0B"
+param_past["2210"]="7A"
+param_past["2211"]="48"
+param_past["2212"]="16"
 
 param_new = {}
-param_new["2208"]="56"
-param_new["2209"]="24"
-param_new["2210"]="93"
-param_new["2211"]="61"
-param_new["2212"]="2F"
-
+param_new["2301"]="40"
+param_new["2302"]="0E"
+param_new["2303"]="DC"
+param_new["2304"]="AA"
+param_new["2305"]="78"
+param_new["2306"]="46"
+param_new["2307"]="14"
+param_new["2308"]="E2"
+param_new["2309"]="B0"
+param_new["2310"]="1F"
+param_new["2311"]="ED"
+param_new["2312"]="BB"
 
 class ParserRaceParams:
     @classmethod
