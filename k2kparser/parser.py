@@ -5,6 +5,7 @@ import logging
 import urllib.request
 import urllib.error
 from abc import ABCMeta, abstractmethod
+import time
 
 from bs4 import BeautifulSoup
 
@@ -12,7 +13,7 @@ from . import util
 
 
 JRA_BASE_URL = 'https://www.jra.go.jp'
-
+HTTP_ERROR_RETRY = 3
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +68,16 @@ class Parser:
         else:
             request = urllib.request.Request(self.uri, headers=headers)
 
-        try :
-            with urllib.request.urlopen(request) as response:
-                response_body = response.read().decode(self.decoder)
-        except urllib.error.HTTPError as e:
-            raise ParseErrorHTTP(e.code)
+        for i in range(HTTP_ERROR_RETRY):
+            try :
+                with urllib.request.urlopen(request) as response:
+                    response_body = response.read().decode(self.decoder)
+            except urllib.error.HTTPError as e:
+                if i > HTTP_ERROR_RETRY:
+                    raise ParseErrorHTTP(e.code)
+                else:
+                    logger.info('HTTP Error Retry({})'.format(i + 1))
+                    time.sleep(1)
 
         json_data = self.parse_html(response_body)
 
