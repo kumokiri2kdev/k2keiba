@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name='k2keiba',
-    version='0.0.49',
-    packages=['k2kparser'],
+    version='0.0.50',
+    packages=['k2kparser', 'k2kvideo'],
     url='',
     license='free',
     author='kumokiri2k',
