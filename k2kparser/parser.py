@@ -72,6 +72,7 @@ class Parser:
             try :
                 with urllib.request.urlopen(request) as response:
                     response_body = response.read().decode(self.decoder)
+                    break
             except urllib.error.HTTPError as e:
                 if i > HTTP_ERROR_RETRY:
                     raise ParseErrorHTTP(e.code)
