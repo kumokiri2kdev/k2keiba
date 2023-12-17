@@ -275,20 +275,23 @@ param_past["2209"]="0B"
 param_past["2210"]="7A"
 param_past["2211"]="48"
 param_past["2212"]="16"
+param_past["2301"]="27"
+param_past["2302"]="F5"
+param_past["2303"]="C3"
+param_past["2304"]="91"
+param_past["2305"]="5F"
+param_past["2306"]="2D"
+param_past["2307"]="FB"
+param_past["2308"]="C9"
+param_past["2309"]="97"
+param_past["2310"]="06"
+param_past["2311"]="D4"
+param_past["2312"]="BB"
 
 param_new = {}
-param_new["2301"]="40"
-param_new["2302"]="0E"
-param_new["2303"]="DC"
-param_new["2304"]="AA"
-param_new["2305"]="78"
-param_new["2306"]="46"
-param_new["2307"]="14"
-param_new["2308"]="E2"
-param_new["2309"]="B0"
-param_new["2310"]="1F"
-param_new["2311"]="ED"
-param_new["2312"]="BB"
+
+var objParam = new Array();
+
 
 class ParserRaceParams:
     @classmethod
