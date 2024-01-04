@@ -289,8 +289,18 @@ param_past["2311"]="D4"
 param_past["2312"]="BB"
 
 param_new = {}
-
-var objParam = new Array();
+param_new["2401"]="CC"
+param_new["2402"]="9A"
+param_new["2403"]="68"
+param_new["2404"]="36"
+param_new["2405"]="04"
+param_new["2406"]="D2"
+param_new["2407"]="A0"
+param_new["2408"]="6E"
+param_new["2409"]="3C"
+param_new["2410"]="AB"
+param_new["2411"]="79"
+param_new["2412"]="47"
 
 
 class ParserRaceParams:
