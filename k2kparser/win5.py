@@ -38,7 +38,7 @@ class ParserWin5Filter(parser.ParserPost):
             return None
 
         nink = ninki.split('¥n')
-        return int(ninki[0].replace('番人気', ''))
+        return int(ninki.replace('番人気', ''))
 
     @classmethod
     def race_remaining_filter(cls, element):
