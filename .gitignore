@@ -3,4 +3,4 @@ test/sand_box.py
 dist
 k2keiba.egg-info
 test/sandbox
-
+k2kparser/__pycache__/
