@@ -187,7 +187,7 @@ def main():
         out = calendar.ParserCalendar().parse()
         save('calendar', out, page=start)               # JSON page
         if len(_captured) > start + 1 and out:
-            save('calendar_month', out[0]['races'], page=start + 1)  # first race-day page
+            save('calendar_month', out[0]['kaisai'], page=start + 1)  # first race-day page
         return out
     step('calendar', calendar_step)
 
