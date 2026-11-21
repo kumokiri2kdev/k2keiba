@@ -20,4 +20,4 @@ if __name__ == '__main__':
                 p = pw.ParserWin5Kaisai(link['url'], link['param'])
                 win5 = p.parse()
                 logger.info(win5)
-                link = win5['prev_url'] if 'prev_url' in win5 else None
+                link = win5['prev_link'] if 'prev_link' in win5 else None

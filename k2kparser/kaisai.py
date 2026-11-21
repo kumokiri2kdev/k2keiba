@@ -1,6 +1,8 @@
-""" JRA Kaisai Page Parser """
+""" JRA Kaisai (今週の開催情報) Page Parser
+
+Output keys follow docs/naming.md.
+"""
 import logging
-import re
 
 from . import util
 from . import parser
@@ -10,63 +12,68 @@ logger = logging.getLogger(__name__)
 
 class ParserKaisai(parser.ParserPost):
 
-    def __init__(self, path='/JRADB/accessI.html', param='pw01ide01/4F'):
-        super().__init__(path, param)
+    def __init__(self, path='/JRADB/accessI.html', param='pw01ide01/4F', **kwargs):
+        super().__init__(path, param, **kwargs)
 
+    def parse_racecourses(self, soup_unit):
+        soup_block = soup_unit.find('div', attrs={'class': 'weather_block'})
+        if soup_block is None:
+            return []
 
-    def parse_header(self, soup):
-        header_soup = soup.find('div', attrs={'class': 'contents_header'})
-        main_soup = header_soup.find('div', attrs={'class': 'main'})
-        main_soup_text = main_soup.get_text().strip('\n')
-        ret = {
-            'date': main_soup_text.split('\u3000')[0]
-        }
+        # Columns are aligned by position. Some columns are empty (no meeting at that slot).
+        names = [util.Util.trim_clean(th.get_text())
+                 for th in soup_block.find('thead').find_all('th', attrs={'class': 'rc'})]
+        racecourses = [{'racecourse': name} if name else None for name in names]
 
-        return ret
+        soup_tbody = soup_block.find('tbody')
 
-    def parse_weather(self, soup):
-        weather_block_soup = soup.find('div', attrs={'class': 'weather_block'})
-        thead_soup = weather_block_soup.find('thead')
-        rcs_soup = thead_soup.find_all('th', attrs={'class': 'rc'})
+        soup_weather = soup_tbody.find('tr', attrs={'class': 'weather'})
+        if soup_weather is not None:
+            for i, soup_td in enumerate(soup_weather.find_all('td', recursive=False)):
+                text = util.Util.trim_clean(soup_td.get_text())
+                if i < len(racecourses) and racecourses[i] is not None and text:
+                    racecourses[i]['weather'] = text
 
-        ret = []
-        for rc_soup in rcs_soup:
-            ret.append({
-                'place': rc_soup.get_text().strip()
-            })
+        soup_baba = soup_tbody.find('tr', attrs={'class': 'baba'})
+        if soup_baba is not None:
+            for i, soup_td in enumerate(soup_baba.find_all('td', recursive=False)):
+                if i >= len(racecourses) or racecourses[i] is None:
+                    continue
+                track_condition = {}
+                for soup_cap in soup_td.find_all('span', attrs={'class': 'cap'}):
+                    soup_main = soup_cap.parent.find('span', attrs={'class': 'main'})
+                    if soup_main is None:
+                        continue
+                    if 'turf' in soup_cap['class']:
+                        track_condition['turf'] = util.Util.trim_clean(soup_main.get_text())
+                    elif 'dirt' in soup_cap['class']:
+                        track_condition['dirt'] = util.Util.trim_clean(soup_main.get_text())
+                if track_condition:
+                    racecourses[i]['track_condition'] = track_condition
 
-        tbody_soup = weather_block_soup.find('tbody')
-        weather_soup = tbody_soup.find('tr', attrs={'class': 'weather'})
-        weather_list_soup = weather_soup.find_all('div', attrs={'class' : 'weather'})
-
-        for i, weather_info_soup in enumerate(weather_list_soup):
-            ret[i]['weather'] = weather_info_soup.get_text()
-
-        baba_soup = tbody_soup.find('tr', attrs={'class': 'baba'})
-        baba_uls_soup = baba_soup.find_all('ul')
-
-        for i, baba_ul_soup in enumerate(baba_uls_soup):
-            caps_soup = baba_ul_soup.find_all('span', attrs={'class': 'cap'})
-
-            ret[i]['condition'] = {}
-            for cap_soup in caps_soup:
-                if 'turf' in cap_soup['class']:
-                    ret[i]['condition']['turf'] = cap_soup.parent.find('span', attrs={'class': 'main'}).get_text()
-                elif 'dirt' in cap_soup['class']:
-                    ret[i]['condition']['dirt'] = cap_soup.parent.find('span', attrs={'class': 'main'}).get_text()
-
-        return ret
+        return [rc for rc in racecourses if rc is not None]
 
     def parse_content(self, soup):
+        """ 今週の開催情報（天候・馬場状態）
+        :return: dict
+            'date', 'weekday'
+            'racecourses': list of dict
+                'racecourse': 競馬場
+                'weather': 天候
+                'track_condition': {'turf': 芝, 'dirt': ダート}
+        """
         ret = {}
-        kaisai_info_soup = soup.find('div', attrs={'class': 'kaisai_info_unit'})
-        if kaisai_info_soup is None:
+        soup_unit = soup.find('div', attrs={'class': 'kaisai_info_unit'})
+        if soup_unit is None:
             return ret
 
-        date = self.parse_header(kaisai_info_soup)
-        ret.update(date)
+        header = soup_unit.find('div', attrs={'class': 'contents_header'}).find('div', attrs={'class': 'main'})
+        header = header.get_text()
+        ret['date'] = util.to_iso_date(header)
+        weekday = util.parse_weekday(header)
+        if weekday:
+            ret['weekday'] = weekday
 
-        weather = self.parse_weather(kaisai_info_soup)
-        ret['places'] = weather
+        ret['racecourses'] = self.parse_racecourses(soup_unit)
 
         return ret

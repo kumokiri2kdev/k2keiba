@@ -1,153 +1,130 @@
-""" JRA Result Page Parser """
-from datetime import datetime, timedelta, timezone
-import urllib.request
-import urllib.error
+""" JRA Calendar (開催日程) Parsers
 
+Output keys follow docs/naming.md.
+"""
+from datetime import datetime
 import logging
-import pprint
+import re
 
 from . import util
 from . import parser
+from .tokubetsu import WEIGHT_RULES
 
 logger = logging.getLogger(__name__)
 
-# class ParserCalendarMonth(parser.Parser):
-#     PATH = '/keiba/calendar/{}'
-#
-#     def __init__(self, path):
-#         super().__init__(ParserCalendar.PATH.format(path))
-#
-#     def parse_content(self, soup):
-#         print(soup)
 
 class ParserCalendarMonth(parser.Parser):
+    """ 1開催日のレース一覧（開催日程のページ） """
     PATH = '/keiba/calendar{}/{}/{}/{:02d}{:02d}.html'
-    def __init__(self, year, month, day):
+
+    def __init__(self, year, month, day, **kwargs):
         path = self.PATH.format(year, year, month, month, day)
         self.year = year
         self.month = month
         self.day = day
 
-        super().__init__(path)
+        super().__init__(path, **kwargs)
+
+    @staticmethod
+    def parse_race_cond(text, race):
+        """ '（ダ）ハンデ' / '（芝）（牝）' -> surface, weight_rule, rule """
+        text = util.Util.trim_clean(text)
+        m = re.match(r'^（([^）]*)）', text)
+        if m:
+            surface = util.parse_surface(m.group(1))
+            if surface:
+                race['surface'] = surface
+            text = text[m.end():].strip()
+        for weight_rule in WEIGHT_RULES:
+            if text.endswith(weight_rule):
+                race['weight_rule'] = weight_rule
+                text = text[:-len(weight_rule)].strip()
+                break
+        if text:
+            race['rule'] = text
 
     def parse_content(self, soup):
-        soup_days = soup.find_all('table', attrs={'class': 'narrow-xy'})
-
+        """
+        :return: list of dict
+            'kai', 'racecourse', 'nichi'
+            'races': list of dict
+                'race_num', 'name', 'class', 'distance', 'surface', 'rule', 'weight_rule', 'departure'
+        """
         kaisais = []
 
-        for soup_day in soup_days:
-            soup_caption = soup_day.find('caption')
-            soup_kaisai = soup_caption.find('div', attrs={'class': 'main'})
-            kaisai = soup_kaisai.get_text()
-            soup_trs = soup_day.find('tbody').find_all('tr')
-            races = []
-            for soup_tr in soup_trs:
+        for soup_day in soup.find_all('table', attrs={'class': 'narrow-xy'}):
+            kaisai = util.parse_kaisai_name(
+                soup_day.find('caption').find('div', attrs={'class': 'main'}).get_text())
+            kaisai['races'] = []
+
+            for soup_tr in soup_day.find('tbody').find_all('tr'):
                 race = {}
 
                 soup_th = soup_tr.find('th')
-                assert soup_th is not None
-                soup_th.find('span').decompose()
-                try :
-                    race_no = int(soup_th.get_text())
-                except :
-                    race_no = soup_th.get_text()
+                race_num = util.parse_int(soup_th.get_text())
+                if race_num is not None:
+                    race['race_num'] = race_num
 
-                #print(race_no)
-                race['index'] = race_no
-
-                soup_class = soup_tr.find('p', attrs={'class': 'race_class'})
-                race_class = soup_class.get_text()
-                #print(race_class)
+                race_class = util.Util.trim_clean(soup_tr.find('p', attrs={'class': 'race_class'}).get_text())
+                soup_stakes = soup_tr.find('p', attrs={'class': 'stakes'})
+                race['name'] = util.Util.trim_clean(soup_stakes.get_text()) if soup_stakes else race_class
                 race['class'] = race_class
 
-                soup_stakes = soup_tr.find('p', attrs={'class': 'stakes'})
-                if soup_stakes is not None:
-                    race_name = soup_stakes.get_text()
-                else:
-                    race_name = race_class
-                #print(race_name)
-                race['name'] = race_name
-
                 soup_cond = soup_tr.find('p', attrs={'class': 'race_cond'})
-                soup_dist = soup_cond.find('span', attrs={'class': 'dist'})
-                soup_type = soup_cond.find('span', attrs={'class': 'type'})
+                race['distance'] = util.parse_int(soup_cond.find('span', attrs={'class': 'dist'}).get_text())
+                self.parse_race_cond(soup_cond.find('span', attrs={'class': 'type'}).get_text(), race)
 
-                distance = soup_dist.get_text()
-                type = soup_type.get_text()
+                departure = util.to_hhmm(soup_tr.find('td', attrs={'class': 'time'}).get_text())
+                if departure:
+                    race['departure'] = departure
 
-                #print(distance)
-                race['distance'] = distance
+                kaisai['races'].append(race)
 
-                #print(type)
-                type = type.split('）')
-                course = type[0].replace('（','')
-                cond = type[1]
-                race['course'] = course
-                race['cond'] = cond
-
-                soup_time = soup_tr.find('td', attrs={'class': 'time'})
-                departure = soup_time.get_text()
-                #print(departure)
-                race['departure'] = departure
-
-                races.append(race)
-
-            kaisais.append({
-                'kaisai': kaisai,
-                'races': races
-            })
+            kaisais.append(kaisai)
 
         return kaisais
 
 
-
 class ParserCalendar(parser.ParserJson):
+    """ 1か月分の開催日程。開催日ごとに ParserCalendarMonth でページを取得する。 """
     PATH = '/keiba/common/calendar/json/{}.json?=_{}'
 
-    def __init__(self, year=None, month=None):
-        JST = timezone(timedelta(hours=+9), 'JST')
+    def __init__(self, year=None, month=None, **kwargs):
+        now = datetime.now(util.JST)
+        self.year = year if year is not None else now.year
+        self.month = month if month is not None else now.month
 
-        now = datetime.now(JST)
+        calendar_id = '{}{:02d}'.format(self.year, self.month)
+        super().__init__(self.PATH.format(calendar_id, int(now.timestamp())), **kwargs)
 
-        if year is None:
-            year = now.year
-
-        if month is None:
-            month = now.month
-
-        calendar_id ='{}{:02d}'.format(year, month)
-
-        ts = int(now.timestamp())
-
-
-        self.year = year
-        self.month = month
-
-        print(self.PATH.format(calendar_id, ts))
-        super().__init__(self.PATH.format(calendar_id, ts))
-
+    def fetch_day(self, day):
+        """ Fetch race list of one day. Overridable for tests. """
+        return ParserCalendarMonth(self.year, self.month, day).parse()
 
     def parse_content(self, json_data):
+        """
+        :return: list of dict（日付順）
+            'date': 'YYYY-MM-DD'
+            'weekday': '日'
+            'kaisai': list of dict（ParserCalendarMonth の出力）
+        """
         contents = []
         for date in sorted(json_data[0]['data'], key=lambda x: int(x['date'])):
-            if 'race' in date['info'][0] and len(date['info'][0]['race']) > 0:
-                #pprint.pprint(date)
-                #print('{}/{}'.format(self.year, self.month))
-                day = int(date['date'])
-                pm = ParserCalendarMonth(self.year, self.month, day)
-                try :
-                    races = pm.parse()
-                    #pprint.pprint(races)
-                    contents.append({
-                        'year': self.year,
-                        'month': self.month,
-                        'day': day,
-                        'races': races
-                    })
-                except parser.ParseErrorHTTP as e:
-                    if e.code == 404:
-                        break
-                    print(e.code)
+            if not ('race' in date['info'][0] and len(date['info'][0]['race']) > 0):
+                continue
+            day = int(date['date'])
+            try:
+                kaisai = self.fetch_day(day)
+            except parser.ParseErrorHTTP as e:
+                if e.code == 404:
+                    break
+                logger.warning('HTTP error {} : {}/{}/{}'.format(e.code, self.year, self.month, day))
+                continue
 
+            date_obj = datetime(self.year, self.month, day)
+            entry = {'date': date_obj.strftime('%Y-%m-%d'),
+                     'weekday': '月火水木金土日'[date_obj.weekday()],
+                     'kaisai': kaisai}
+            contents.append(entry)
 
         return contents

@@ -14,13 +14,13 @@ if __name__ == '__main__':
 
     for kaisai in kaisai_list:
         for day in kaisai['kaisai']:
-            pk = po.ParserOddsKaisai(day['param']['url'], day['param']['param'])
+            pk = po.ParserOddsKaisai(day['link']['url'], day['link']['param'])
             result = pk.parse()
 
             logger.info('日付 : '+ result['date'])
-            logger.info(' {}回{}{}日'.format(result['index'], result['place'], result['nichisuu']))
+            logger.info(' {}回{}{}日'.format(result['kai'], result['racecourse'], result['nichi']))
 
             for race in result['races']:
-                logger.info(' ' * 2 + '{}レース {}'.format(race['index'], race['name']))
-                for key in race['odds_params'].keys():
-                    logger.info('   {} {}'.format(key, race['odds_params'][key]))
+                logger.info(' ' * 2 + '{}レース {}'.format(race['race_num'], race['name']))
+                for key in race['odds_links'].keys():
+                    logger.info('   {} {}'.format(key, race['odds_links'][key]))

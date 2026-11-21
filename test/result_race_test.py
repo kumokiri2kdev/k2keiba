@@ -28,7 +28,7 @@ if __name__ == '__main__':
         p = pr.ParserResultRace('/JRADB/accessS.html', race)
         race = p.parse()
 
-        val = ut.Util.parse_date_to_int(race['date'])
+        val = race['date']
         #logger.info(val)
         #logger.info(race)
         pprint.pprint(race)

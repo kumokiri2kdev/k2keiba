@@ -1,92 +1,126 @@
-""" JRA Tokubetsu Page Parser """
+""" JRA Tokubetsu (特別レース登録馬) Page Parsers
+
+Output keys follow docs/naming.md.
+"""
 import logging
-import re
 
 from . import util
 from . import parser
+from .den import _onclick_link, _href_link
 
 
 logger = logging.getLogger(__name__)
 
-""" JRA Tokubetsu Top Page Parser """
+WEIGHT_RULES = ('定量', '別定', '馬齢', 'ハンデ')
+
+
+def split_condition(text):
+    """ '（国際）（指定） 定量' -> {'rule': '（国際）（指定）', 'weight_rule': '定量'} """
+    text = util.Util.trim_clean(text)
+    ret = {}
+    tokens = text.split()
+    if tokens and tokens[-1] in WEIGHT_RULES:
+        ret['weight_rule'] = tokens.pop()
+    rule = ' '.join(tokens)
+    if rule:
+        ret['rule'] = rule
+    return ret
+
+
 class ParserTokubetuTop(parser.ParserPost):
     def parse_content(self, soup):
-
+        """ 特別レース登録馬（レース一覧）
+        :return: list of dict
+            'date', 'weekday'
+            'kaisai': list of dict
+                'kai', 'racecourse', 'nichi'
+                'races': list of dict
+                    'name', 'grade', 'class', 'distance', 'surface', 'rule', 'weight_rule', 'link'
+        """
         ret = []
 
-        soup_date_list = soup.find_all('div', attrs={'class': 'date_unit'})
-        for soup_date in soup_date_list:
-            ret_kaisai_list = []
-            soup_date_tag = soup_date.find('h2')
-            soup_rcs = soup_date.find_all('div', attrs={'class': 'rc'})
-            for soup_rc in soup_rcs:
+        for soup_date in soup.find_all('div', attrs={'class': 'date_unit'}):
+            header = soup_date.find('h2').get_text()
+            day = {'date': util.to_iso_date(header)}
+            weekday = util.parse_weekday(header)
+            if weekday:
+                day['weekday'] = weekday
+            day['kaisai'] = []
+
+            for soup_rc in soup_date.find_all('div', attrs={'class': 'rc'}):
                 soup_kaisai = soup_rc.find('h3')
-                if soup_kaisai == None:
+                if soup_kaisai is None:
                     continue
 
-                ret_races = []
-                soup_links = soup_rc.find_all('li')
-                for soup_link in soup_links:
-                    soup_anchor = soup_link.find('a')
-                    if soup_anchor is not None and soup_anchor.has_attr('onclick'):
-                        try:
-                            params = util.Util.parse_func_params(soup_anchor['onclick'])
-                        except parser.ParseError as per:
-                            logger.info('Anchor parse error: ' + soup_anchor.getText())
+                kaisai = util.parse_kaisai_name(soup_kaisai.get_text())
+                kaisai['races'] = []
+                for soup_li in soup_rc.find_all('li'):
+                    soup_anchor = soup_li.find('a')
+                    if soup_anchor is None:
+                        continue
+                    race = {}
+                    link = _onclick_link(soup_anchor)
 
-                    soup_span = soup_link.find('span', attrs={'class': 'opt'})
-                    soup_class = soup_span.find('span', attrs={'class': 'class'})
-                    soup_distance = soup_span.find('span', attrs={'class': 'dist'})
-                    soup_cap = soup_span.find('span', attrs={'class': 'cap'})
+                    soup_opt = soup_anchor.find('span', attrs={'class': 'opt'})
+                    if soup_opt is not None:
+                        soup_opt.extract()
+                    soup_grade = soup_anchor.find('span', attrs={'class': 'grade_icon'})
+                    if soup_grade is not None:
+                        if soup_grade.find('img') is not None:
+                            race['grade'] = soup_grade.find('img')['alt']
+                        soup_grade.extract()
+                    race['name'] = util.Util.trim_clean(soup_anchor.get_text())
 
-                    soup_span.extract()
+                    if soup_opt is not None:
+                        soup_class = soup_opt.find('span', attrs={'class': 'class'})
+                        if soup_class is not None:
+                            race['class'] = util.Util.trim_clean(soup_class.get_text())
+                        soup_dist = soup_opt.find('span', attrs={'class': 'dist'})
+                        if soup_dist is not None:
+                            text = soup_dist.get_text()          # '2400メートル芝'
+                            race['distance'] = util.parse_int(text)
+                            surface = util.parse_surface(text)
+                            if surface:
+                                race['surface'] = surface
+                        soup_cap = soup_opt.find('span', attrs={'class': 'cap'})
+                        if soup_cap is not None:
+                            race.update(split_condition(soup_cap.get_text()))
 
-                    ret_races.append({
-                        'name': soup_link.get_text(),
-                        'class': soup_class.get_text(),
-                        'course': soup_distance.get_text(),
-                        'condition': soup_cap.get_text(),
-                        'link': params
-                    })
-                ret_kaisai_list.append({
-                    'kaisai': soup_kaisai.get_text(),
-                    'races': ret_races
+                    if link:
+                        race['link'] = link
+                    kaisai['races'].append(race)
 
-                })
-            ret.append({
-                'date': soup_date_tag.get_text(),
-                'kaisai': ret_kaisai_list
-            })
+                day['kaisai'].append(kaisai)
+
+            ret.append(day)
 
         return ret
 
 
-
-""" JRA Tokubetsu Race Page Parser """
 class ParserTokubetuRace(parser.ParserPost):
     def parse_content(self, soup):
+        """ 特別レース登録馬（1レース）
+        :return: list of dict
+            'name', 'link', 'hande'
+        """
         horses = []
-        soup_horse_lists = soup.find_all('div', attrs={'class': 'horse_list'})
-        for soup_horse_list in soup_horse_lists:
-            soup_tables = soup_horse_list.find_all('table')
-            for soup_table in soup_tables:
+        for soup_list in soup.find_all('div', attrs={'class': 'horse_list'}):
+            for soup_table in soup_list.find_all('table'):
                 soup_tbody = soup_table.find('tbody')
-                soup_trs = soup_tbody.find_all('tr')
-                for soup_tr in soup_trs:
+                if soup_tbody is None:
+                    continue
+                for soup_tr in soup_tbody.find_all('tr'):
                     soup_horse = soup_tr.find('td', attrs={'class': 'horse'})
-                    soup_anchor = soup_horse.find('a')
-                    if soup_anchor is not None and soup_anchor.has_attr('href'):
-                        try:
-                            params = util.Util.format_params2(soup_anchor['href'])
-                        except parser.ParseError as per:
-                            logger.info('Anchor parse error: ' + soup_anchor.getText())
-
+                    if soup_horse is None:
+                        continue
+                    horse = {'name': util.Util.trim_clean(soup_horse.get_text())}
+                    link = _href_link(soup_horse.find('a'))
+                    if link:
+                        horse['link'] = link
                     soup_weight = soup_tr.find('td', attrs={'class': 'weight'})
-
-                    horses.append({
-                        'name': soup_horse.get_text(),
-                        'link': params,
-                        'hande': soup_weight.get_text()
-                    })
+                    hande = util.parse_float(soup_weight.get_text()) if soup_weight else None
+                    if hande is not None:
+                        horse['hande'] = hande
+                    horses.append(horse)
 
         return horses

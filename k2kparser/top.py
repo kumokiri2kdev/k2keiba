@@ -1,4 +1,7 @@
-""" JRA Page Top Parser """
+""" JRA Page Top Parser
+
+Output keys follow docs/naming.md.
+"""
 import logging
 
 from . import util
@@ -7,78 +10,58 @@ from . import parser
 
 logger = logging.getLogger(__name__)
 
+# リンク先 -> tag
+TAG_TABLE = {
+    'accessI.html': 'kaisai',       # 開催情報
+    'accessD.html': 'den',          # 出馬表
+    'accessO.html': 'odds',         # オッズ
+    'accessH.html': 'payout',       # 払戻金
+    'accessS.html': 'result',       # レース結果
+    'accessT.html': 'tokubetsu',    # 特別レース登録馬
+    'accessR.html': 'search',       # 競走馬検索
+}
+
+SEARCH_LINK = {'url': '/JRADB/accessR.html', 'param': 'pw02uliD1'}
+
+
 class ParserTop(parser.Parser):
     def __init__(self, **kwargs):
         super(ParserTop, self).__init__('/', **kwargs)
 
     def parse_content(self, soup):
-        """ Parse content and return parameters if exist
-        :param soup:
-        :return: Array of dict of parameters(URL and Post parameter)
-            'tag': タグ
-                'kaisai': 開催情報, 'shutuba': 出馬表, 'odds': オッズ, 'haraimodoshi': レース結果,'tokubetu': 特別レース登録馬
-            'params': Dict of URL and Post parameter
-                'url':  URL,
-                'param': Prameter
+        """ トップページのクイックメニュー
+        :return: list of dict
+            'tag': 'kaisai' | 'den' | 'odds' | 'payout' | 'result' | 'tokubetsu' | 'search'
+            'link': link
         """
-        param_list = {}
         qmenu = soup.find('div', attrs={'id': 'quick_menu'})
-
         if qmenu is None:
             logger.error('ParseError : "quick menu" not found')
             raise parser.ParseError
 
-        content = qmenu.find('div', attrs={"class": "inner"})
+        content = qmenu.find('div', attrs={'class': 'inner'})
         if content is None:
             raise parser.ParseError
 
-        links = content.find_all('li')
+        ret = []
+        for soup_li in content.find_all('li'):
+            soup_anchor = soup_li.find('a')
+            if soup_anchor is None or not soup_anchor.has_attr('onclick'):
+                continue
+            try:
+                link = util.Util.parse_func_params(soup_anchor['onclick'])
+            except parser.ParseError:
+                logger.debug('Anchor parse error: ' + soup_anchor.getText())
+                continue
 
-        param_list = []
+            tag = next((t for page, t in TAG_TABLE.items() if link['url'].endswith(page)), None)
+            if tag is None:
+                logger.warning('Unknown URL: ' + link['url'])
+                continue
+            ret.append({'tag': tag, 'link': link})
 
-        for link in links:
-            anchor = link.find('a')
-            if anchor.has_attr('onclick'):
-                tag = ''
-                try :
-                    params = util.Util.parse_func_params(anchor['onclick'])
-                    if params['url'].endswith('accessI.html'):
-                        # 開催情報
-                        tag = 'kaisai'
-                    elif params['url'].endswith('accessD.html'):
-                        # 出馬表
-                        tag = 'shutuba'
-                    elif params['url'].endswith('accessO.html'):
-                        # オッズ
-                        tag = 'odds'
-                    elif params['url'].endswith('accessH.html'):
-                        # 払い戻し
-                        tag = 'haraimodoshi'
-                    elif params['url'].endswith('accessS.html'):
-                        # レース結果
-                        tag = 'result'
-                    elif params['url'].endswith('accessT.html'):
-                        # 特別レース登録馬
-                        tag = 'tokubetu'
-                    else:
-                        logger.warning('Unknown URL: ' + params['url'])
-                        continue
-                except parser.ParseError:
-                    logger.debug('Anchor parse error: ' + anchor.getText())
-                    continue
+        # 競走馬検索がメニューにない場合は、既知のリンクを足す
+        if ret and not any(item['tag'] == 'search' for item in ret):
+            ret.append({'tag': 'search', 'link': dict(SEARCH_LINK)})
 
-                param_list.append({
-                    'tag': tag,
-                    'link': params
-                })
-
-        if len(param_list) > 0:
-            param_list.append({
-                'tag': 'search',
-                'link': {
-                    'url': '/JRADB/accessR.html',
-                    'param': 'pw02uliD1'
-                }
-            })
-
-        return param_list
+        return ret

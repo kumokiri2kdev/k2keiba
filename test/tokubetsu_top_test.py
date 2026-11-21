@@ -19,6 +19,6 @@ if __name__ == '__main__':
     for date in kaisai_list:
         for kaisai in date['kaisai']:
             for race in kaisai['races']:
-                rp = pt.ParserTokubetuRace(race['params'][0],race['params'][1])
+                rp = pt.ParserTokubetuRace(race['link']['url'], race['link']['param'])
                 horse_list = rp.parse()
                 pprint.pprint(horse_list)

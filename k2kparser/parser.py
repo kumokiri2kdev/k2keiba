@@ -139,44 +139,48 @@ class ParserKaisaiTop(ParserPost, metaclass=ABCMeta):
         return soup_days
 
     def parse_content(self, soup):
+        """ Parse the list of kaisai days.
+        :return: list of dict
+            'date': 'YYYY-MM-DD'
+            'weekday': '土'
+            'kaisai': list of dict
+                'kai': 開催回, 'nichi': 開催日次, 'racecourse': 競馬場, 'link': link
+            'win5_link': link (only on pages/days that have WIN5)
+        """
         soup_days = self.parse_days(soup)
         kaisai_list = []
 
         for soup_day in soup_days:
-            kaisai_info = {}
             header = util.Util.trim_clean(soup_day.find('h3').getText())
-            date, weekday = util.Util.parse_kaisai_date_week(header)
-
-            kaisai_info['date'] = date
-            kaisai_info['week_day'] = weekday
+            kaisai_info = {'date': util.to_iso_date(header)}
+            weekday = util.parse_weekday(header)
+            if weekday:
+                kaisai_info['weekday'] = weekday
             kaisai_info['kaisai'] = []
 
             soup_kaisai_block = soup_day.find('div', attrs={'class': 'div3'})
-            soup_anchors = soup_kaisai_block.find_all('a')
-            for soup_anchor in soup_anchors:
-                kaisai_info_day = {}
+            for soup_anchor in soup_kaisai_block.find_all('a'):
+                kaisai_day = util.parse_kaisai_name(soup_anchor.getText().replace('馬番確定', ''))
+                if 'kai' not in kaisai_day:
+                    logger.info('parse_kaisai_name error: ' + soup_anchor.getText())
+                    continue
 
                 if soup_anchor.has_attr('onclick'):
                     try:
-                        params = util.Util.parse_func_params(soup_anchor['onclick'])
-                    except ParseError as per:
+                        kaisai_day['link'] = util.Util.parse_func_params(soup_anchor['onclick'])
+                    except ParseError:
                         logger.info('Anchor parse error: ' + soup_anchor.getText())
 
-                try:
-                    kaisai_text = soup_anchor.getText().replace('馬番確定','')
-                    kaisai_param = util.Util.parse_kaisai(kaisai_text)
-                except ValueError:
-                    logger.info('parse_kaisai error: ' + soup_anchor.getText())
+                kaisai_info['kaisai'].append(kaisai_day)
 
-                kaisai_info_day['index'] = kaisai_param[0]
-                kaisai_info_day['day'] = kaisai_param[1]
-                kaisai_info_day['place'] = kaisai_param[2]
-                kaisai_info_day['link'] = params
-
-                kaisai_info['kaisai'].append(kaisai_info_day)
-
-            kaisai_list.append(kaisai_info)
+            # The header has no year. Take it from a link parameter ('...20251004/45') when possible.
+            for kaisai_day in kaisai_info['kaisai']:
+                year = util.year_from_param(kaisai_day.get('link', {}).get('param', ''), kaisai_info['date'])
+                if year is not None:
+                    kaisai_info['date'] = util.to_iso_date(header, year=year)
+                    break
 
             self.parse_addtionl_in_day(soup_day, kaisai_info)
+            kaisai_list.append(kaisai_info)
 
         return kaisai_list

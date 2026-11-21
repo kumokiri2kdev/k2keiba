@@ -1,16 +1,24 @@
-""" JRA Odds Page Parser """
+""" JRA Odds (オッズ) Page Parsers
+
+Output keys follow docs/naming.md.
+"""
 import logging
 import re
 from abc import ABCMeta, abstractmethod
 
 from . import util
 from . import parser
+from . import den
+from .den import _onclick_link
 
 
 logger = logging.getLogger(__name__)
 
-exchange_table = {
+# ページ上の表記 -> 券種キー
+BET_TYPE_TABLE = {
     '単勝・複勝': 'win',
+    '単勝': 'win',
+    '複勝': 'place',
     '枠連': 'wakuren',
     '馬連': 'umaren',
     'ワイド': 'wide',
@@ -19,547 +27,252 @@ exchange_table = {
     '3連単': 'tierce',
 }
 
+# 開催ごとのレース一覧にある、オッズボタンの class 名 -> 券種キー
+_BUTTON_CLASS_TABLE = {'tanpuku': 'win'}
+
+
+def _odds_value(text):
+    """ '12.3' -> 12.3 / '取消', '票数なし' など -> None """
+    text = text.strip()
+    try:
+        return float(text.replace(',', ''))
+    except ValueError:
+        return None
+
+
 class ParserOddsTop(parser.ParserKaisaiTop):
+    """ オッズトップ: list of kaisai days. See ParserKaisaiTop.parse_content. """
     def __init__(self, path='/JRADB/accessD.html', param='pw15oli00/6D'):
         super().__init__(path, param)
 
     def get_base_soup(self, soup):
-        soup_area = soup.find('div', attrs={'id': 'contentsBody'})
-        soup_thisweek = soup_area.find('div', attrs={'class': 'thisweek'})
+        return soup.find('div', attrs={'id': 'contentsBody'}).find('div', attrs={'class': 'thisweek'})
 
-        return soup_thisweek
 
 class ParserOddsKaisai(parser.ParserPost):
     def parse_content(self, soup):
-        """ Parse content and return kaisai odds list
-        :param soup:
-        :return: Array of Dict of Kaisai Race
-            'date': 日付
-            'weekday': 曜日
-            'index': 開催回数
-            'nichisuu': 開催日数
-            'place': 場所
-            'races': Array of race
-                'index': レース番号
-                'departure': 発走時刻
-                'name': レース名
-                'cond': レース条件
-                'params' Dict of odds params
-                    'tanpuku': 単複 URL and Post parameter
-                    'wakuren': 枠連 URL and Post parameter
-                    'umaren': 馬連 URL and Post parameter
-                    'umatan': 馬単 URL and Post parameter
-                    'wide': ワイド URL and Post parameter
-                    'trio': 三連複 URL and Post parameter
-                    'tierce': 三連単 URL and Post parameter
-
+        """ 開催ごとのレース一覧
+        :return: dict
+            'date', 'weekday', 'kai', 'racecourse', 'nichi'
+            'races': list of dict
+                'race_num', 'name', 'condition',
+                'odds_links': {券種: link}  (win / wakuren / umaren / wide / umatan / trio / tierce)
         """
+        soup_table = soup.find('div', attrs={'id': 'contentsBody'}).find('table', attrs={'id': 'race_list'})
+        ret = den.parse_kaisai_caption(soup_table)
+        ret['races'] = []
 
-        kaisai_list = {}
-
-        soup_area = soup.find('div', attrs={'id': 'contentsBody'})
-        soup_table = soup_area.find('table', attrs={'id': 'race_list'})
-        soup_caption = soup_table.find('caption')
-        soup_caption_main = soup_caption.find('div', attrs={'class': 'main'})
-        date, weekday, index, place, nichisuu = util.Util.parse_kaisai_date(soup_caption_main.getText())
-        kaisai_list['date'] = date
-        kaisai_list['weekday'] = weekday
-        kaisai_list['index'] = index
-        kaisai_list['place'] = place
-        kaisai_list['nichisuu'] = nichisuu
-        kaisai_list['races'] = []
-
-        soup_tbody = soup_table.find('tbody')
-        soup_races = soup_tbody.find_all('tr')
-        for soup_race in soup_races:
+        for soup_race in soup_table.find('tbody').find_all('tr'):
             race = {}
-            soup_race_name = soup_race.find('td', attrs={'class': 'race_name'}).find('div').find_all('div')
-            race_name = util.Util.trim_clean(soup_race_name[0].getText())
-            race_cond = util.Util.trim_clean(soup_race_name[1].getText())
-            if race_cond == '':
-                race_cond = race_name
+            race['race_num'] = int(soup_race.find('a').find('img')['alt'].replace('レース', ''))
 
-            soup_anchor = soup_race.find('a')
-            soup_img = soup_anchor.find('img')
-            race_index = int(soup_img['alt'].replace('レース', ''))
+            soup_names = soup_race.find('td', attrs={'class': 'race_name'}).find('div').find_all('div')
+            race['name'] = util.Util.trim_clean(soup_names[0].getText())
+            condition = util.Util.trim_clean(soup_names[1].getText())
+            race['condition'] = condition if condition != '' else race['name']
 
-            race['index'] = race_index
-            race['name'] = race_name
-            race['cond'] = race_cond
+            odds_links = {}
+            for soup_button in soup_race.find('div', attrs={'class': 'btn_list'}).find_all('div'):
+                link = _onclick_link(soup_button.find('a'))
+                if link is not None and soup_button.has_attr('class'):
+                    css = soup_button['class'][0]
+                    odds_links[_BUTTON_CLASS_TABLE.get(css, css)] = link
+            race['odds_links'] = odds_links
 
-            soup_odds_link_div = soup_race.find('div', attrs={'class': 'btn_list'})
-            soup_odds_link_divs = soup_odds_link_div.find_all('div')
-            odds_params = {}
-            for soup_odds_link in soup_odds_link_divs:
-                soup_anchor = soup_odds_link.find('a')
-                if soup_anchor is not None and soup_anchor.has_attr('onclick'):
-                    try:
-                        params = util.Util.parse_func_params(soup_anchor['onclick'])
-                        odds_params[soup_odds_link['class'][0]] = params
-                    except parser.ParseError as per:
-                        logger.info('Anchor parse error: ' + soup_anchor.getText())
+            ret['races'].append(race)
 
-            race['odds_params'] = odds_params
-
-            kaisai_list['races'].append(race)
-
-        return kaisai_list
+        return ret
 
 
 class OddsParser(parser.ParserPost, metaclass=ABCMeta):
+    """ Base of single-race odds pages.
+    parse_content returns dict
+        'odds_links': {券種: link}
+        'odds': 券種ごとの形（各サブクラス参照）
+        'votes': {券種: 票数, 'total': 総票数}  (ページにある場合)
+        'updated_at': 'HH:MM' オッズ更新時刻
+    """
     def parse_odds_links(self, soup_area):
-        soup_ul = soup_area.find('ul', attrs={'class': 'pills'})
-        soup_lis = soup_ul.find_all('li')
         links = {}
-        for soup_li in soup_lis:
+        soup_ul = soup_area.find('ul', attrs={'class': 'pills'})
+        if soup_ul is None:
+            return links
+        for soup_li in soup_ul.find_all('li'):
             soup_anchor = soup_li.find('a')
-            if soup_anchor is not None:
-                tag = util.Util.trim_clean(soup_anchor.getText())
-                if tag in exchange_table and soup_anchor.has_attr('onclick'):
-                    try:
-                        params = util.Util.parse_func_params(soup_anchor['onclick'])
-                        links[exchange_table[tag]] = params
-                    except parser.ParseError as per:
-                        logger.info('Anchor parse error: ' + tag)
-
+            if soup_anchor is None:
+                continue
+            tag = util.Util.trim_clean(soup_anchor.getText())
+            if tag in BET_TYPE_TABLE:
+                link = _onclick_link(soup_anchor)
+                if link is not None:
+                    links[BET_TYPE_TABLE[tag]] = link
         return links
 
     @abstractmethod
     def parse_odds_content(self, soup_area):
         pass
 
-    def parse_odds_vote(self, soup_vote):
-        soup_tbody = soup_vote.find('tbody')
-        soup_trs = soup_tbody.find_all('tr')
-        vote = {}
-
-        soup_tr = soup_trs[0]
-        tag = soup_tr.find('th').getText().strip()
-        if tag in exchange_table:
-            tag = exchange_table[tag]
-        else:
-            logger.warning('Unknown tag found in vote : ' + th)
-
-        td = int(soup_tr.find('td').getText().strip().replace(',', ''))
-        vote[tag] = td
-
-        soup_tr = soup_trs[1]
-        td = int(soup_tr.find('td').getText().strip().replace(',', ''))
-        vote['total'] = td
-
-        return vote
+    def parse_odds_votes(self, soup_vote):
+        votes = {}
+        for soup_tr in soup_vote.find('tbody').find_all('tr'):
+            th = util.Util.trim_clean(soup_tr.find('th').getText())
+            value = util.parse_int(soup_tr.find('td').getText())
+            if '合計' in th:
+                votes['total'] = value
+            elif th in BET_TYPE_TABLE:
+                votes[BET_TYPE_TABLE[th]] = value
+            else:
+                logger.warning('Unknown tag found in vote : ' + th)
+        return votes
 
     def parse_content(self, soup):
-        odds = {}
         soup_area = soup.find('div', attrs={'id': 'contentsBody'})
 
-        odds['links'] = self.parse_odds_links(soup_area)
-
-        odds['odds'] = self.parse_odds_content(soup_area)
+        ret = {
+            'odds_links': self.parse_odds_links(soup_area),
+            'odds': self.parse_odds_content(soup_area),
+        }
 
         soup_vote = soup_area.find('div', attrs={'id': 'votes'})
         if soup_vote is not None:
-            odds['vote'] = self.parse_odds_vote(soup_vote)
+            ret['votes'] = self.parse_odds_votes(soup_vote)
 
-        # ToDo : Observe running odds
-        soup_reflresh = soup_area.find('div', attrs={'class': 'refresh_line'})
-        if soup_reflresh:
-            odds['refresh'] = util.Util.trim_clean(soup_reflresh.getText())
-            soup_time = soup_reflresh.find('div', attrs={'class': 'time'})
-            if soup_time:
-                odds['time'] = util.Util.trim_clean(soup_time.getText())
+        soup_refresh = soup_area.find('div', attrs={'class': 'refresh_line'})
+        soup_time = soup_refresh.find('div', attrs={'class': 'time'}) if soup_refresh else None
+        if soup_time is not None:
+            updated_at = util.to_hhmm(soup_time.getText())
+            if updated_at:
+                ret['updated_at'] = updated_at
 
+        return ret
+
+    @classmethod
+    def parse_pair_tables(cls, soup_lis, first_of):
+        """ Tables whose caption (or image) is the first horse/waku and rows are the second.
+        :return: {'1-2': odds or None}
+        """
+        odds = {}
+        for soup_li in soup_lis:
+            first = first_of(soup_li)
+            for soup_tr in soup_li.find_all('tr'):
+                td = soup_tr.find('td').getText().strip()
+                if td == '':
+                    continue
+                odds['{}-{}'.format(first, soup_tr.find('th').getText().strip())] = _odds_value(td)
         return odds
 
 
 class OddsParserWin(OddsParser):
-    def parse_odds_links(self, soup_area):
-        soup_ul = soup_area.find('ul', attrs={'class': 'pills'})
-        soup_lis = soup_ul.find_all('li')
-        links = {}
-        for soup_li in soup_lis:
-            soup_anchor = soup_li.find('a')
-            if soup_anchor is not None:
-                tag = util.Util.trim_clean(soup_anchor.getText())
-                if tag in exchange_table and soup_anchor.has_attr('onclick'):
-                    try:
-                        params = util.Util.parse_func_params(soup_anchor['onclick'])
-                        links[exchange_table[tag]] = params
-                    except parser.ParseError as per:
-                        logger.info('Anchor parse error: ' + tag)
-
-        return links
-
-    def parse_odds_winplace(self, soup_table):
-        soup_tbody = soup_table.find('tbody')
-        soup_trs = soup_tbody.find_all('tr')
-
+    def parse_odds_content(self, soup_area):
+        """ 単勝・複勝
+        :return: list of dict
+            'waku', 'horse_num',
+            'win': 単勝オッズ (取消は None),
+            'place': {'min': 複勝の下限, 'max': 複勝の上限} (取消は None)
+        """
+        soup_table = soup_area.find('table', attrs={'class': 'tanpuku'})
         waku = 0
         horses = []
-        for soup_tr in soup_trs:
-            horse = {}
-            soup_td_waku = soup_tr.find('td', attrs={'class': 'waku'})
-            if soup_td_waku is not None:
-                soup_img = soup_td_waku.find('img')
-                waku = int(re.sub(r'[^0-9]', '', soup_img['alt']))
-            horse['waku'] = waku
+        for soup_tr in soup_table.find('tbody').find_all('tr'):
+            soup_waku = soup_tr.find('td', attrs={'class': 'waku'})
+            if soup_waku is not None and soup_waku.find('img') is not None:
+                waku = util.parse_int(soup_waku.find('img')['alt'])   # rowspan: carries over to next rows
 
-            horse['num'] = int(soup_tr.find('td', attrs={'class': 'num'}).getText())
-
-            win = soup_tr.find('td', attrs={'class': 'odds_tan'}).getText()
-            if win != '取消' and win is not None:
-                try:
-                    horse['win'] = float(win)
-                except:
-                    logging.debug('Win is not number')
+            horse = {'waku': waku,
+                     'horse_num': int(soup_tr.find('td', attrs={'class': 'num'}).getText())}
+            horse['win'] = _odds_value(soup_tr.find('td', attrs={'class': 'odds_tan'}).getText())
 
             soup_place = soup_tr.find('td', attrs={'class': 'odds_fuku'})
-            if soup_place.getText() != '取消':
-                place = {}
-                horse['place'] = place
-                place_min = soup_place.find('span', attrs={'class': 'min'}).getText()
-                try :
-                    place['min'] = float(place_min)
-                except:
-                    logging.debug('Place Min is not number')
-
-                place_max = soup_place.find('span', attrs={'class': 'max'}).getText()
-                try :
-                    place['max'] = float(place_max)
-                except:
-                    logging.debug('Place Max is not number')
+            soup_min = soup_place.find('span', attrs={'class': 'min'})
+            soup_max = soup_place.find('span', attrs={'class': 'max'})
+            if soup_min is not None and soup_max is not None:
+                horse['place'] = {'min': _odds_value(soup_min.getText()), 'max': _odds_value(soup_max.getText())}
+            else:
+                horse['place'] = None
 
             horses.append(horse)
 
         return horses
 
-    def parse_odds_vote(self, soup_vote):
-        soup_tbody = soup_vote.find('tbody')
-        soup_trs = soup_tbody.find_all('tr')
-        vote = {}
-
-        for soup_tr in soup_trs:
-            th = soup_tr.find('th').getText()
-            td = int(soup_tr.find('td').getText().replace(',',''))
-            if th == '単勝':
-                vote['win'] = td
-            elif th == '複勝':
-                vote['place'] = td
-            elif th == '総票数合計':
-                vote['total'] = td
-            else:
-                logger.warning('Unknown tag found in vote : ' + th)
-
-        return vote
-
-    def parse_odds_content(self, soup_area):
-        soup_table = soup_area.find('table', attrs={'class': 'tanpuku'})
-        horses = self.parse_odds_winplace(soup_table)
-
-        return horses
-
-    # parse_content output
-    """ Parse content and return odds win info if exist
-    :param soup:
-    :return: Array of Dict of Odds Win
-        'links': URLs
-            'win': 単勝・複勝 URL and Post parameter
-            'umaren': 馬連 URL and Post parameter
-            'wide': 馬連 URL and Post parameter
-            'umatan': 馬連 URL and Post parameter
-            'trio': 馬連 URL and Post parameter
-            'tierce': 馬連 URL and Post parameter
-        'odds': Array of Horse Odds
-            'waku': 枠順
-            'num': 馬番
-            'win': 単勝オッズ
-            'place': 複勝オッズ
-                'min': 最低オッズ
-                'max': 最大オッズ
-        'vote': 全体投票情報
-            'win': 単勝投票数
-            'place': 複勝投票数
-            'total': 単勝 + 複勝投票数
-    """
 
 class OddsParserBracketQuinella(OddsParser):
     def parse_odds_content(self, soup_area):
-        soup_ul = soup_area.find('ul', attrs={'class': 'waku_list'})
-        soup_lis = soup_ul.find_all('li')
+        """ 枠連: {'1-2': odds} """
+        soup_lis = soup_area.find('ul', attrs={'class': 'waku_list'}).find_all('li')
+        return self.parse_pair_tables(
+            soup_lis, lambda soup_li: re.sub(r'[^0-9]', '', soup_li.find('table').find('img')['alt']))
 
-        odds = {}
-        for soup_li in soup_lis:
-            soup_table = soup_li.find('table')
-            soup_img = soup_table.find('img')
-            tag_1 = re.sub(r'[^0-9]', '', soup_img['alt'])
-            soup_trs = soup_li.find_all('tr')
-            for soup_tr in soup_trs:
-                th = soup_tr.find('th').getText().strip()
-                td = soup_tr.find('td').getText().strip()
-                if td == '':
-                    continue
-                else:
-                    try:
-                        odds_val = float(td)
-                    except ValueError:
-                        logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
-                        odds_val = td
-
-                odds[tag_1 + '-' + th] = odds_val
-
-        return odds
-
-    # parse_content output
-    """ Parse content and return odds win info if exist
-    :param soup:
-    :return: Array of Dict of Odds Win
-        'links': URLs
-            'win': 単勝・複勝 URL and Post parameter
-            'umaren': 馬連 URL and Post parameter
-            'wide': 馬連 URL and Post parameter
-            'umatan': 馬連 URL and Post parameter
-            'trio': 馬連 URL and Post parameter
-            'tierce': 馬連 URL and Post parameter
-        'odds': Dict of Wakuren Odds {枠版組み合わせ : オッズ}
-        'vote': 全体投票情報
-            'wakuren': 枠連投票数
-            'total': 単勝 + 複勝投票数
-    """
 
 class OddsParserBracket(OddsParser):
+    """ 馬連: {'1-2': odds} """
     list_class_tag = 'umaren_list'
+
     def parse_odds_content(self, soup_area):
-        soup_uls = soup_area.find_all('ul', attrs={'class': self.list_class_tag})
-        odds = {}
+        soup_lis = [soup_li for soup_ul in soup_area.find_all('ul', attrs={'class': self.list_class_tag})
+                    for soup_li in soup_ul.find_all('li')]
+        return self.parse_pair_tables(
+            soup_lis, lambda soup_li: soup_li.find('table').find('caption').getText().strip())
 
-        for soup_ul in soup_uls:
-            soup_lis = soup_ul.find_all('li')
-
-            for soup_li in soup_lis:
-                soup_table = soup_li.find('table')
-                tag_1 = soup_table.find('caption').getText().strip()
-                soup_trs = soup_li.find_all('tr')
-                for soup_tr in soup_trs:
-                    th = soup_tr.find('th').getText().strip()
-                    td = soup_tr.find('td').getText().strip()
-                    if td == '':
-                        continue
-                    else:
-                        try:
-                            odds_val = float(td)
-                        except ValueError:
-                            logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
-                            odds_val = td
-
-                    odds[tag_1 + '-' + th] = odds_val
-
-        return odds
-
-    # parse_content output
-    """ Parse content and return odds win info if exist
-    :param soup:
-    :return: Array of Dict of Odds Win
-        'links': URLs
-            'win': 単勝・複勝 URL and Post parameter
-            'umaren': 馬連 URL and Post parameter
-            'wide': 馬連 URL and Post parameter
-            'umatan': 馬連 URL and Post parameter
-            'trio': 馬連 URL and Post parameter
-            'tierce': 馬連 URL and Post parameter
-        'odds': Dict of Umaren Odds {馬連組み合わせ : オッズ}
-        'vote': 全体投票情報
-            'umaren': 枠連投票数
-            'total': 単勝 + 複勝投票数
-    """
 
 class OddsParserExacta(OddsParserBracket):
+    """ 馬単: {'1-2': odds}（1着-2着） """
     list_class_tag = 'umatan_list'
-    # parse_content output
-    """ Parse content and return odds exacta info if exist
-    :param soup:
-    :return: Array of Dict of Odds Exacta
-        'links': URLs
-            'win': 単勝・複勝 URL and Post parameter
-            'umaren': 馬連 URL and Post parameter
-            'wide': 馬連 URL and Post parameter
-            'umatan': 馬連 URL and Post parameter
-            'trio': 馬連 URL and Post parameter
-            'tierce': 馬連 URL and Post parameter
-        'odds': Dict of Umatan Odds {馬連組み合わせ : オッズ}
-        'vote': 全体投票情報
-            'umatan': 枠連投票数
-            'total': 単勝 + 複勝投票数
-    """
 
 
 class OddsParserWide(OddsParser):
     def parse_odds_content(self, soup_area):
-        soup_uls = soup_area.find_all('ul', attrs={'class': 'wide_list'})
-
+        """ ワイド: {'1-2': {'min': 下限, 'max': 上限}}（取消などは None） """
         odds = {}
-
-        for soup_ul in soup_uls:
-            soup_lis = soup_ul.find_all('li')
-
-            for soup_li in soup_lis:
-                soup_table = soup_li.find('table')
-                tag_1 = soup_table.find('caption').getText().strip()
-                soup_trs = soup_li.find_all('tr')
-                for soup_tr in soup_trs:
-                    th = soup_tr.find('th').getText().strip()
-                    odds[tag_1 + '-' + th] = {}
+        for soup_ul in soup_area.find_all('ul', attrs={'class': 'wide_list'}):
+            for soup_li in soup_ul.find_all('li'):
+                first = soup_li.find('table').find('caption').getText().strip()
+                for soup_tr in soup_li.find_all('tr'):
+                    key = '{}-{}'.format(first, soup_tr.find('th').getText().strip())
                     soup_td = soup_tr.find('td')
-
                     soup_min = soup_td.find('span', attrs={'class': 'min'})
-                    if soup_min is None:
-                        val = soup_td.getText().strip()
-                        odds[tag_1 + '-' + th]['min'] = val
-                        odds[tag_1 + '-' + th]['max'] = val
+                    soup_max = soup_td.find('span', attrs={'class': 'max'})
+                    if soup_min is None or soup_max is None:
+                        if soup_td.getText().strip() != '':
+                            odds[key] = None
                         continue
-
-                    min = soup_min.getText().strip()
-                    if min == '':
+                    if soup_min.getText().strip() == '':
                         continue
-                    else:
-                        try:
-                            min_val = float(min)
-                        except ValueError:
-                            logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
-                            min_val = min
-
-                    odds[tag_1 + '-' + th]['min'] = min_val
-
-                    max = soup_td.find('span', attrs={'class': 'max'}).getText().strip()
-                    if max == '':
-                        continue
-                    else:
-                        try:
-                            max_val = float(max)
-                        except ValueError:
-                            logger.debug('Float Convertion Error: ' + soup_tr.find('th').getText().strip())
-                            max_val = max
-
-                    odds[tag_1 + '-' + th]['max'] = max_val
-
-
+                    odds[key] = {'min': _odds_value(soup_min.getText()), 'max': _odds_value(soup_max.getText())}
         return odds
-
-        # parse_content output
-        """ Parse content and return odds wide info if exist
-        :param soup:
-        :return: Array of Dict of Odds Wide
-            'links': URLs
-                'win': 単勝・複勝 URL and Post parameter
-                'umaren': 馬連 URL and Post parameter
-                'wide': 馬連 URL and Post parameter
-                'umatan': 馬連 URL and Post parameter
-                'trio': 馬連 URL and Post parameter
-                'tierce': 馬連 URL and Post parameter
-            'odds': Dict of Umatan Odds {馬連組み合わせ : {
-                        'min': 最低オッズ
-                        'max': 最大オッズ
-                    }
-            'vote': 全体投票情報
-                'wide': 枠連投票数
-                'total': 単勝 + 複勝投票数
-        """
 
 
 class OddsParserTrio(OddsParser):
     def parse_odds_content(self, soup_area):
+        """ 3連複: {'1-2-3': odds} """
         odds = {}
-
         soup_odds_list = soup_area.find('div', attrs={'id': 'odds_list'})
-        soup_fuku3_unit_list = soup_odds_list.find_all('div', attrs={'class': 'fuku3_unit'})
-        for soup_fuku3_unit in soup_fuku3_unit_list:
-            soup_uls = soup_fuku3_unit.find_all('ul', attrs={'class': 'fuku3_list'})
-            for soup_ul in soup_uls:
-                soup_lis = soup_ul.find_all('li')
-                for soup_li in soup_lis:
-                    soup_caption = soup_li.find('caption')
-                    soup_trs = soup_li.find_all('tr')
-                    for soup_tr in soup_trs:
-                        th = soup_tr.find('th').getText().strip()
+        for soup_unit in soup_odds_list.find_all('div', attrs={'class': 'fuku3_unit'}):
+            for soup_ul in soup_unit.find_all('ul', attrs={'class': 'fuku3_list'}):
+                for soup_li in soup_ul.find_all('li'):
+                    first = soup_li.find('caption').getText().strip()
+                    for soup_tr in soup_li.find_all('tr'):
                         td = soup_tr.find('td').getText().strip()
-                        tag = '{}-{}'.format(soup_caption.getText().strip(), th)
-                        if td != '取消':
-                            try:
-                                odds_val = float(td)
-                                odds[tag] = odds_val
-                            except ValueError:
-                                logger.error('Failed to conver odds ' + td)
-                        else:
-                            odds[tag] = td
-
-                        #logger.debug('{}-{} => {}'.format(soup_caption.getText().strip(), th, td))
-
+                        if td == '':
+                            continue
+                        odds['{}-{}'.format(first, soup_tr.find('th').getText().strip())] = _odds_value(td)
         return odds
-
-    # parse_content output
-    """ Parse content and return odds trio info if exist
-    :param soup:
-    :return: Array of Dict of Odds Trio
-        'links': URLs
-            'win': 単勝・複勝 URL and Post parameter
-            'umaren': 馬連 URL and Post parameter
-            'wide': 馬連 URL and Post parameter
-            'umatan': 馬連 URL and Post parameter
-            'trio': 馬連 URL and Post parameter
-            'tierce': 馬連 URL and Post parameter
-        'odds': Dict of Trio Odds {三連複組み合わせ : オッズ
-        'vote': 全体投票情報
-            'trio': 三連複投票数
-            'total': 単勝 + 複勝投票数
-    """
 
 
 class OddsParserTierce(OddsParser):
     def parse_odds_content(self, soup_area):
+        """ 3連単: {'1-2-3': odds}（1着-2着-3着） """
         odds = {}
-
         soup_odds_list = soup_area.find('div', attrs={'id': 'odds_list'})
-        soup_fuku3_unit_list = soup_odds_list.find_all('div', attrs={'class': 'tan3_unit'})
-
-        for soup_fuku3_unit in soup_fuku3_unit_list:
-            soup_lis = soup_fuku3_unit.find_all('li')
-            for soup_li in soup_lis:
-                soup_divs = soup_li.find_all('div', attrs={'class': 'num'})
-                if len(soup_divs) != 2:
+        for soup_unit in soup_odds_list.find_all('div', attrs={'class': 'tan3_unit'}):
+            for soup_li in soup_unit.find_all('li'):
+                soup_nums = soup_li.find_all('div', attrs={'class': 'num'})
+                if len(soup_nums) != 2:
                     logger.error('Not enough pairs')
                     continue
-
-                soup_trs = soup_li.find_all('tr')
-                for soup_tr in soup_trs:
-                    th = soup_tr.find('th').getText().strip()
+                prefix = '{}-{}'.format(soup_nums[0].getText().strip(), soup_nums[1].getText().strip())
+                for soup_tr in soup_li.find_all('tr'):
                     td = soup_tr.find('td').getText().strip()
                     if td == '':
                         continue
-
-                    tag = '{}-{}-{}'.format(soup_divs[0].getText().strip(), soup_divs[1].getText().strip(), th)
-                    if td != '取消':
-                        try:
-                            odds_val = float(td)
-                            odds[tag] = odds_val
-                        except ValueError:
-                            logger.error('Failed to conver odds ' + td)
-                    else:
-                        odds[tag] = td
-
+                    odds['{}-{}'.format(prefix, soup_tr.find('th').getText().strip())] = _odds_value(td)
         return odds
-
-    # parse_content output
-    """ Parse content and return odds tierce info if exist
-    :param soup:
-    :return: Array of Dict of Odds Tierce
-        'links': URLs
-            'win': 単勝・複勝 URL and Post parameter
-            'umaren': 馬連 URL and Post parameter
-            'wide': 馬連 URL and Post parameter
-            'umatan': 馬連 URL and Post parameter
-            'trio': 馬連 URL and Post parameter
-            'tierce': 馬連 URL and Post parameter
-        'odds': Dict of Trio Odds {三連単組み合わせ: オッズ}
-        'vote': 全体投票情報
-            'tierce': 三連単投票数
-            'total': 単勝 + 複勝投票数
-    """
