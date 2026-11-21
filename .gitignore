@@ -5,3 +5,4 @@ k2keiba.egg-info
 test/sandbox
 k2kparser/__pycache__/
 __pycache__/
+test/fixtures/
