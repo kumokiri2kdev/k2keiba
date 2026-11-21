@@ -9,6 +9,7 @@ from k2kparser import util
     ('2026年1月5日', None, '2026-01-05'),
     ('11月21日（土曜）', 2025, '2025-11-21'),
     ('2024.3.9', None, '2024-03-09'),
+    ('2026-11-21', None, '2026-11-21'),
 ])
 def test_to_iso_date(text, year, expected):
     assert util.to_iso_date(text, year=year) == expected

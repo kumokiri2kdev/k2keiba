@@ -42,7 +42,7 @@ _RACECOURSE_RE = '(' + '|'.join(RACECOURSES) + ')'
 def to_iso_date(text, year=None):
     """ '2026年11月21日' / '11月21日' / '2026.11.21' / '2026/11/21' -> '2026-11-21'
     When the text has no year, `year` (default: this year in JST) is used. """
-    m = re.search(r'(\d{4})\s*[年./]\s*(\d{1,2})\s*[月./]\s*(\d{1,2})', text)
+    m = re.search(r'(\d{4})\s*[年./-]\s*(\d{1,2})\s*[月./-]\s*(\d{1,2})', text)
     if m:
         y, mo, d = (int(v) for v in m.groups())
     else:
