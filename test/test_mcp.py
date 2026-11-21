@@ -228,3 +228,30 @@ def test_list_pages_are_cached(call):
     assert not call('get_race_card', {**args, 'race_num': card['race_num']}).is_error
     # The top list and the meeting page are fetched only once for the two calls
     assert len(call.requested) == len(set(call.requested)) == 3     # top, meeting, race card
+
+
+# ---- HTTP transport ----
+
+def test_transport_security_default():
+    assert mcp_server.transport_security('127.0.0.1', []) is None      # SDK default (localhost only)
+
+
+def test_transport_security_allow_host():
+    s = mcp_server.transport_security('127.0.0.1', ['abc.trycloudflare.com'])
+    assert s.enable_dns_rebinding_protection
+    assert {'localhost:*', 'abc.trycloudflare.com'} <= set(s.allowed_hosts)
+    assert 'https://abc.trycloudflare.com' in s.allowed_origins
+
+
+def test_main_runs_http(monkeypatch):
+    calls = []
+    monkeypatch.setattr(mcp_server.server, 'run', lambda *a, **kw: calls.append((a, kw)))
+    mcp_server.main(['--http', '--port', '9000', '--allow-host', 'abc.example.com'])
+    (args, kwargs), = calls
+    assert args == ('streamable-http',)
+    assert kwargs['port'] == 9000 and 'abc.example.com' in kwargs['transport_security'].allowed_hosts
+
+
+def test_main_allow_host_needs_http():
+    with pytest.raises(SystemExit):
+        mcp_server.main(['--allow-host', 'abc.example.com'])

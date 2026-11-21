@@ -1,13 +1,16 @@
 """ MCP server exposing k2keiba (JRA horse racing data) as tools.
 
-Run:  python -m k2kmcp        (stdio transport, for Claude Code / Claude Desktop)
+Run:  k2keiba-mcp             (stdio transport, for Claude Code / Claude Desktop)
+      k2keiba-mcp --http      (Streamable HTTP at http://127.0.0.1:8000/mcp, for remote clients such as ChatGPT)
 """
+import argparse
 from typing import Annotated, Any, Literal, Optional
 
 from pydantic import Field
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
 from k2kparser import parser
@@ -214,8 +217,45 @@ async def get_horse(
     return horse
 
 
-def main():
-    server.run('stdio')
+LOCAL_HOSTS = ('127.0.0.1', 'localhost', '::1')
+
+
+def transport_security(host, allow_hosts):
+    """ Host/Origin checks of the HTTP transport (protection against DNS rebinding).
+
+    Bound to localhost, the SDK accepts only localhost Host headers. Behind a tunnel or a reverse proxy the
+    Host header is the public name, so it has to be added with allow_hosts. Returns None for the SDK default.
+    """
+    if not allow_hosts:
+        return None
+    hosts, origins = [], []
+    if host in LOCAL_HOSTS:
+        hosts += ['127.0.0.1:*', 'localhost:*', '[::1]:*']
+        origins += ['http://127.0.0.1:*', 'http://localhost:*', 'http://[::1]:*']
+    for name in allow_hosts:
+        hosts.append(name)
+        origins.append('https://' + name)
+    return TransportSecuritySettings(enable_dns_rebinding_protection=True, allowed_hosts=hosts,
+                                     allowed_origins=origins)
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog='k2keiba-mcp', description='MCP server of k2keiba (JRA horse racing data)')
+    ap.add_argument('--http', action='store_true',
+                    help='serve Streamable HTTP at http://HOST:PORT/mcp instead of stdio')
+    ap.add_argument('--host', default='127.0.0.1', help='address to bind with --http (default: 127.0.0.1)')
+    ap.add_argument('--port', type=int, default=8000, help='port with --http (default: 8000)')
+    ap.add_argument('--allow-host', action='append', default=[], metavar='NAME',
+                    help='also accept this Host header, e.g. the tunnel name xxxx.trycloudflare.com (repeatable)')
+    args = ap.parse_args(argv)
+
+    if not args.http:
+        if args.allow_host:
+            ap.error('--allow-host needs --http')
+        server.run('stdio')
+        return
+    server.run('streamable-http', host=args.host, port=args.port,
+               transport_security=transport_security(args.host, args.allow_host))
 
 
 if __name__ == '__main__':
