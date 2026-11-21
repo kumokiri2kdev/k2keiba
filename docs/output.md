@@ -53,6 +53,42 @@ ParserCalendar（月）─ ParserCalendarMonth（日）
 
 失敗したときは `k2kparser.parser.ParseError` を送出します（HTTP エラーは、そのサブクラスの `ParseErrorHTTP`。`code` に HTTP ステータスが入ります）。
 
+### 並行して取得する（非同期版）
+
+すべてのパーサーに、`parse()` の非同期版 `aparse()` があります（asyncio + aiohttp）。出力は `parse()` と同じです。
+`aio.AsyncClient` を共有すると、接続を使い回せます。
+
+```python
+import asyncio
+from k2kparser import aio, den
+
+async def main():
+    async with aio.AsyncClient() as client:
+        days = await den.ParserDenTop().aparse(client)
+        kaisai = days[0]['kaisai'][0]
+        races = await den.ParserDenKaisai(kaisai['link']['url'], kaisai['link']['param']).aparse(client)
+        # 12レース分の出馬表を並行して取得
+        return await asyncio.gather(*(
+            den.ParserDenRace(r['link']['url'], r['link']['param']).aparse(client) for r in races['races']))
+
+cards = asyncio.run(main())
+```
+
+JRA に負荷をかけすぎないよう、リクエストはサーバー（ホスト）ごとに常に制限されます。`AsyncClient` を共有していなくても、同じ制限がかかります。
+
+| 制限 | 既定値 | 変更方法 |
+|---|---|---|
+| 同時に送るリクエスト数 | 4 | `aio.set_limits(max_concurrency=...)` |
+| リクエストの開始間隔 | 0.25 秒 | `aio.set_limits(min_interval=...)` |
+
+`set_limits()` は、リクエストを始める前に呼んでください。
+
+そのほかの違い:
+
+- 内部でさらにページを取得するパーサーは、その部分も並行して取得します（`ParserCalendar` の開催日のページ、`ParserResultRace(fetch_video=True)` の映像の情報）。
+- 失敗したときのリトライは同期版と同じく3回までですが、404 などのクライアントエラー（408・429 以外の 4xx）はリトライせず、すぐに `ParseErrorHTTP` を送出します。
+- 映像の HLS は `video.aget_hls(video_id, contract_company_no, client)` でも取得できます。
+
 ## 共通の約束
 
 ### 値の形

@@ -86,6 +86,12 @@ class ParserResultRace(parser.ParserPost):
             video.resolve_videos(race['videos'])
         return race
 
+    async def aparse(self, client=None):
+        race = await super().aparse(client)
+        if getattr(self, 'fetch_video', False) and race.get('videos'):
+            await video.aresolve_videos(race['videos'], client)
+        return race
+
     def parse_payouts(self, soup_li):
         """ One bet type of the refund area -> list of dict(combination, payout, popularity) """
         payouts = []

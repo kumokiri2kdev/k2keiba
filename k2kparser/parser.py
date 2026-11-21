@@ -103,6 +103,21 @@ class Parser:
 
         return json_data
 
+    async def aparse(self, client=None):
+        """ Asynchronous version of parse() (asyncio + aiohttp).
+        :param client: k2kparser.aio.AsyncClient to share connections between requests.
+                       When None, a temporary client is used. Per-host limits apply either way.
+        """
+        body = await self.afetch(client)
+        return self.parse_html(body)
+
+    async def afetch(self, client=None):
+        """ Fetch this page asynchronously and return the decoded body. """
+        from . import aio     # aiohttp is needed only for the async API
+        data = self.data if self.method == 'POST' else None
+        body = await aio.fetch(self.uri, data=data, client=client)
+        return body.decode(self.decoder)
+
     def parse_content(self, soup):
         logger.error("Base Class parse_content must not  be called")
 

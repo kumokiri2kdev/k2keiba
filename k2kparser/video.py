@@ -101,8 +101,37 @@ def get_hls(video_id, contract_company_no=DEFAULT_CONTRACT_COMPANY_NO):
         'duration': 長さ（秒）
     :raises VideoError: when the video is not available (yet) or the response is unexpected
     """
-    base_url = cdn_base_url(contract_company_no)
-    metadata = _fetch(urljoin(base_url, META_PATH.format(video_id)))
+    meta_url = _meta_url(video_id, contract_company_no)
+    movie, master_url = _parse_metadata(video_id, contract_company_no, _fetch(meta_url))
+    return _hls_info(movie, master_url, _fetch(master_url))
+
+
+async def aget_hls(video_id, contract_company_no=DEFAULT_CONTRACT_COMPANY_NO, client=None):
+    """ Asynchronous version of get_hls(). `client`: k2kparser.aio.AsyncClient (optional). """
+    meta_url = _meta_url(video_id, contract_company_no)
+    movie, master_url = _parse_metadata(video_id, contract_company_no, await _afetch(meta_url, client))
+    return _hls_info(movie, master_url, await _afetch(master_url, client))
+
+
+async def _afetch(url, client):
+    from . import aio
+    try:
+        body = await aio.fetch(url, client=client)
+    except parser.ParseErrorHTTP as e:
+        raise VideoError('fetch failed: {} (HTTP {})'.format(url, e.code))
+    except VideoError:
+        raise
+    except parser.ParseError:
+        raise VideoError('fetch failed: {}'.format(url))
+    return body.decode('utf-8-sig')
+
+
+def _meta_url(video_id, contract_company_no):
+    return urljoin(cdn_base_url(contract_company_no), META_PATH.format(video_id))
+
+
+def _parse_metadata(video_id, contract_company_no, metadata):
+    """ -> (movie dict, master playlist URL) """
     wrapper = re.fullmatch(r'\s*metaDataResult\((.*)\)\s*;?\s*', metadata, re.S)
     if not wrapper:
         raise VideoError('unexpected metadata format: ' + video_id)
@@ -113,9 +142,11 @@ def get_hls(video_id, contract_company_no=DEFAULT_CONTRACT_COMPANY_NO):
         raise VideoError('unexpected metadata: {} ({!r})'.format(video_id, e))
     if not master:
         raise VideoError('master playlist not found: ' + video_id)
+    return movie, urljoin(cdn_base_url(contract_company_no), master)
 
-    master_url = urljoin(base_url, master)
-    manifest = _fetch(master_url).splitlines()
+
+def _hls_info(movie, master_url, manifest):
+    manifest = manifest.splitlines()
     variants = [line for line in manifest if line.startswith('#EXT-X-STREAM-INF:')]
     if not manifest or manifest[0].strip() != '#EXTM3U' or not variants:
         raise VideoError('invalid master playlist: ' + master_url)
@@ -140,4 +171,19 @@ def resolve_videos(videos):
                                  video.get('contract_company_no', DEFAULT_CONTRACT_COMPANY_NO)))
         except VideoError as e:
             logger.warning('HLS not available for {} ({}): {}'.format(kind, video['video_id'], e))
+    return videos
+
+
+async def aresolve_videos(videos, client=None):
+    """ Asynchronous version of resolve_videos(): all videos are resolved concurrently. """
+    import asyncio
+
+    async def resolve(kind, video):
+        try:
+            video.update(await aget_hls(video['video_id'],
+                                        video.get('contract_company_no', DEFAULT_CONTRACT_COMPANY_NO), client))
+        except VideoError as e:
+            logger.warning('HLS not available for {} ({}): {}'.format(kind, video['video_id'], e))
+
+    await asyncio.gather(*(resolve(kind, video) for kind, video in videos.items()))
     return videos

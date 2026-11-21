@@ -26,6 +26,8 @@ kaisai = days[0]['kaisai'][0]
 races = den.ParserDenKaisai(kaisai['link']['url'], kaisai['link']['param']).parse()
 ```
 
+非同期版の `aparse()` を使うと、複数のページを並行して取得できます（[docs/output.md](docs/output.md#並行して取得する非同期版)）。
+
 各パーサーの出力は [docs/output.md](docs/output.md)、キー名の規則は [docs/naming.md](docs/naming.md) を参照してください。
 
 ## テスト

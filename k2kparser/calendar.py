@@ -101,6 +101,36 @@ class ParserCalendar(parser.ParserJson):
         """ Fetch race list of one day. Overridable for tests. """
         return ParserCalendarMonth(self.year, self.month, day).parse()
 
+    async def afetch_day(self, day, client=None):
+        """ Asynchronous version of fetch_day(). Overridable for tests. """
+        return await ParserCalendarMonth(self.year, self.month, day).aparse(client)
+
+    @staticmethod
+    def race_days(json_data):
+        """ Days with races in the month JSON, in order. """
+        days = []
+        for date in sorted(json_data[0]['data'], key=lambda x: int(x['date'])):
+            if 'race' in date['info'][0] and len(date['info'][0]['race']) > 0:
+                days.append(int(date['date']))
+        return days
+
+    def build(self, results):
+        """ [(day, kaisai list or ParseErrorHTTP)] in day order -> output.
+        Stops at the first 404 (the page of that day and later is not published yet). """
+        contents = []
+        for day, kaisai in results:
+            if isinstance(kaisai, parser.ParseErrorHTTP):
+                if kaisai.code == 404:
+                    break
+                logger.warning('HTTP error {} : {}/{}/{}'.format(kaisai.code, self.year, self.month, day))
+                continue
+
+            date_obj = datetime(self.year, self.month, day)
+            contents.append({'date': date_obj.strftime('%Y-%m-%d'),
+                             'weekday': '月火水木金土日'[date_obj.weekday()],
+                             'kaisai': kaisai})
+        return contents
+
     def parse_content(self, json_data):
         """
         :return: list of dict（日付順）
@@ -108,23 +138,28 @@ class ParserCalendar(parser.ParserJson):
             'weekday': '日'
             'kaisai': list of dict（ParserCalendarMonth の出力）
         """
-        contents = []
-        for date in sorted(json_data[0]['data'], key=lambda x: int(x['date'])):
-            if not ('race' in date['info'][0] and len(date['info'][0]['race']) > 0):
-                continue
-            day = int(date['date'])
+        results = []
+        for day in self.race_days(json_data):
             try:
-                kaisai = self.fetch_day(day)
+                results.append((day, self.fetch_day(day)))
             except parser.ParseErrorHTTP as e:
+                results.append((day, e))
                 if e.code == 404:
                     break
-                logger.warning('HTTP error {} : {}/{}/{}'.format(e.code, self.year, self.month, day))
-                continue
+        return self.build(results)
 
-            date_obj = datetime(self.year, self.month, day)
-            entry = {'date': date_obj.strftime('%Y-%m-%d'),
-                     'weekday': '月火水木金土日'[date_obj.weekday()],
-                     'kaisai': kaisai}
-            contents.append(entry)
+    async def aparse(self, client=None):
+        """ Asynchronous version of parse(): the pages of the race days are fetched concurrently. """
+        import asyncio
+        import json
 
-        return contents
+        json_data = json.loads(await self.afetch(client))
+        days = self.race_days(json_data)
+
+        async def fetch(day):
+            try:
+                return day, await self.afetch_day(day, client)
+            except parser.ParseErrorHTTP as e:
+                return day, e
+
+        return self.build(await asyncio.gather(*(fetch(day) for day in days)))
