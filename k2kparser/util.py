@@ -62,6 +62,21 @@ def year_from_param(param, iso_date):
     return int(m.group(1)) if m else None
 
 
+def param_checksum(head):
+    """ Last 2 characters of a JRA CNAME parameter ('pw01skl10202510' -> '1E').
+    Weighted byte sum over head + '/', weight 33 * (p XOR (p >> 4)) for position p, plus 144, mod 256.
+    (Found from ~1,100 parameters taken from JRA pages; see test_util.py.) """
+    total = 144
+    for p, ch in enumerate(head + '/'):
+        total += 33 * (p ^ (p >> 4)) * ord(ch)
+    return '{:02X}'.format(total % 256)
+
+
+def make_param(head):
+    """ 'pw01skl10202510' -> 'pw01skl10202510/1E' """
+    return '{}/{}'.format(head, param_checksum(head))
+
+
 def parse_weekday(text):
     """ '（土曜）' / '（土）' / '土曜日' -> '土'. Returns None if not found. """
     m = re.search(r'([月火水木金土日])曜', text) or re.search(r'（([月火水木金土日])）', text)
@@ -179,14 +194,8 @@ class Util:
         if param[7] == '1':
             return param
 
-        param_list = list(param)
-        param_list[7] = '1'
-        param_list[8] = '0'
-        param = ''.join(param_list)
-        params = param.split('/')
-        tail = '{:02X}'.format((int(params[-1], 16) + 0xff - 0x20) & 0x00ff)
-
-        return '{}/{}'.format(params[0], tail)
+        head = param.split('/')[0]
+        return make_param(head[:7] + '10' + head[9:])
 
     @classmethod
     def is_past_result_parameter(cls, param):
@@ -200,14 +209,8 @@ class Util:
         if param[7] == '1':
             return param
 
-        param_list = list(param)
-        param_list[7] = '1'
-        param_list[8] = '0'
-        param = ''.join(param_list)
-        params = param.split('/')
-        tail = '{:02X}'.format((int(params[-1], 16) + 0xff - 0x18) & 0x00ff)
-
-        return '{}/{}'.format(params[0], tail)
+        head = param.split('/')[0]
+        return make_param(head[:7] + '10' + head[9:])
 
     @classmethod
     def is_past_horse_parameter(cls, param):

@@ -1,24 +1,25 @@
 """ Parameters (CNAME) of the past race result pages (過去のレース結果検索)
 
-The page of a month is opened with a CNAME like 'pw01skl10202510/1E'. The last 2 characters come
-from a table (objParam) embedded in the JavaScript of JRA's "過去のレース結果検索" page:
+The page of a month is opened with a CNAME like 'pw01skl10202510/1E'. JRA's "過去のレース結果検索"
+page builds it in JavaScript:
 
     function setParameter(arg1, arg2){
-      var yearMonth = "202611";
+      var yearMonth = "202611";                                                  // this month
       arg = arg1 + arg2;
       if(Number(arg) >= yearMonth){ param = 'pw01skl00' + String(arg) + '/'; }   // not fixed yet
       else                        { param = 'pw01skl10' + String(arg) + '/'; }   // fixed
       cname = param + objParam[String(arg).substring(2,6)];
       ...
 
-The table is saved in result_params_data.py. Regenerate it once a year (before January) with
-    python tools/update_result_params.py
+The last 2 characters (objParam) are the checksum common to all JRA parameters, so they are
+computed with util.param_checksum() instead of keeping the table.
 """
+import datetime
 import logging
 import re
 
 from . import parser
-from . import result_params_data as data
+from . import util
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ PREFIX_NOT_FIXED = 'pw01skl00'
 
 class ParserResultParams(parser.ParserPost):
     """ Read objParam / yearMonth from the JavaScript of the past result search page.
-    (Every past result page has the same script, so any of them can be parsed.) """
+    Not needed to build CNAMEs; kept to check util.param_checksum() against JRA's own table. """
 
     def __init__(self, path=SEARCH_PATH, param=SEARCH_PARAM, **kwargs):
         super().__init__(path, param, **kwargs)
@@ -54,23 +55,23 @@ class ParserResultParams(parser.ParserPost):
                 'params': {k: v.upper() for k, v in params.items()}}
 
 
+def this_month():
+    """ Current YYYYMM in JST (yearMonth of JRA's script). """
+    now = datetime.datetime.now(util.JST)
+    return now.year * 100 + now.month
+
+
 class ParserRaceParams:
     @classmethod
-    def get_cname(cls, yyyymm, params=None, year_month=None):
+    def get_cname(cls, yyyymm, year_month=None):
         """ CNAME of the past result list of a month, for ParserResultKaisaiList.
         :param yyyymm: e.g. 202510
-        :param params, year_month: table to use (default: result_params_data)
-        :return: 'pw01skl10202510/1E', or None when the month is not in the table
+        :param year_month: months on or after this use 'pw01skl00' (default: this month)
+        :return: 'pw01skl10202510/1E'
         """
-        params = data.PARAMS if params is None else params
-        year_month = data.YEAR_MONTH if year_month is None else year_month
-
-        key = '{:02d}{:02d}'.format((yyyymm // 100) % 100, yyyymm % 100)
-        if key not in params:
-            logger.info('No result parameter for {} (update with tools/update_result_params.py)'.format(yyyymm))
-            return None
+        year_month = this_month() if year_month is None else year_month
         prefix = PREFIX_NOT_FIXED if yyyymm >= year_month else PREFIX_FIXED
-        return '{}{}/{}'.format(prefix, yyyymm, params[key])
+        return util.make_param('{}{:06d}'.format(prefix, yyyymm))
 
     @classmethod
     def is_fixed(cls, param):
