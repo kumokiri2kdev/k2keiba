@@ -8,6 +8,7 @@ JRA のホームページから、出馬表・オッズ・レース結果・WIN5
 $ pip install -e .            # 開発用（コードの変更がすぐ反映される）
 $ pip install -e .[video]     # k2kvideo も使う場合（selenium）
 $ pip install -e .[test]      # テストも実行する場合（pytest）
+$ pip install -e .[mcp]       # MCP サーバーも使う場合
 ```
 
 配布用のパッケージを作る場合:
@@ -27,6 +28,8 @@ races = den.ParserDenKaisai(kaisai['link']['url'], kaisai['link']['param']).pars
 ```
 
 非同期版の `aparse()` を使うと、複数のページを並行して取得できます（[docs/output.md](docs/output.md#並行して取得する非同期版)）。
+
+Claude Code や Claude Desktop から使う MCP サーバーもあります（[docs/mcp.md](docs/mcp.md)）。
 
 各パーサーの出力は [docs/output.md](docs/output.md)、キー名の規則は [docs/naming.md](docs/naming.md) を参照してください。
 
