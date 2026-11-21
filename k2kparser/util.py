@@ -33,6 +33,124 @@ logger = logging.getLogger(__name__)
 class UtilError(Exception):
     pass
 
+
+JST = datetime.timezone(datetime.timedelta(hours=9))
+RACECOURSES = ('東京', '中山', '京都', '阪神', '札幌', '函館', '新潟', '福島', '中京', '小倉')
+_RACECOURSE_RE = '(' + '|'.join(RACECOURSES) + ')'
+
+
+def to_iso_date(text, year=None):
+    """ '2026年11月21日' / '11月21日' / '2026.11.21' / '2026/11/21' -> '2026-11-21'
+    When the text has no year, `year` (default: this year in JST) is used. """
+    m = re.search(r'(\d{4})\s*[年./]\s*(\d{1,2})\s*[月./]\s*(\d{1,2})', text)
+    if m:
+        y, mo, d = (int(v) for v in m.groups())
+    else:
+        m = re.search(r'(\d{1,2})月\s*(\d{1,2})日', text)
+        if not m:
+            raise UtilError('date not found: {}'.format(text))
+        y = year if year is not None else datetime.datetime.now(JST).year
+        mo, d = (int(v) for v in m.groups())
+    return '{:04d}-{:02d}-{:02d}'.format(y, mo, d)
+
+
+def year_from_param(param, iso_date):
+    """ Find the year of `iso_date` ('YYYY-MM-DD', year may be a guess) in a JRA parameter that
+    embeds 'YYYYMMDD' (e.g. 'pw01srl10052025040120251004/45'). Returns None if not found. """
+    mmdd = iso_date[5:7] + iso_date[8:10]
+    m = re.search(r'(\d{4})' + mmdd + r'(?=/|Z|$)', param.split('/')[0] + '/')
+    return int(m.group(1)) if m else None
+
+
+def parse_weekday(text):
+    """ '（土曜）' / '（土）' / '土曜日' -> '土'. Returns None if not found. """
+    m = re.search(r'([月火水木金土日])曜', text) or re.search(r'（([月火水木金土日])）', text)
+    return m.group(1) if m else None
+
+
+def to_hhmm(text):
+    """ '15時40分' / '15:40' -> '15:40'. Returns None if not found. """
+    m = re.search(r'(\d{1,2})\s*[時:：]\s*(\d{1,2})', text)
+    if not m:
+        return None
+    return '{:02d}:{:02d}'.format(int(m.group(1)), int(m.group(2)))
+
+
+def parse_kaisai_name(text):
+    """ '5回東京8日' -> {'kai': 5, 'racecourse': '東京', 'nichi': 8}. Missing parts are omitted. """
+    m = re.search(r'(\d+)\s*回\s*' + _RACECOURSE_RE + r'\s*(\d+)\s*日', text)
+    if m:
+        return {'kai': int(m.group(1)), 'racecourse': m.group(2), 'nichi': int(m.group(3))}
+
+    ret = {}
+    m = re.search(r'(\d+)\s*回', text)
+    if m:
+        ret['kai'] = int(m.group(1))
+    m = re.search(_RACECOURSE_RE, text)
+    if m:
+        ret['racecourse'] = m.group(1)
+    return ret
+
+
+def parse_surface(text):
+    """ Normalize course text to '芝' / 'ダート' / '障害'. Returns None if unknown. """
+    if '障' in text:
+        return '障害'
+    if 'ダ' in text:
+        return 'ダート'
+    if '芝' in text:
+        return '芝'
+    return None
+
+
+def parse_int(text):
+    """ '1,234円' -> 1234. Returns None when no digit is found. """
+    digits = re.sub(r'[^0-9\-]', '', text)
+    if digits in ('', '-'):
+        return None
+    return int(digits)
+
+
+def parse_float(text):
+    """ '57.0kg' -> 57.0. Returns None when not a number (e.g. '取消'). """
+    m = re.search(r'-?\d+(\.\d+)?', text.replace(',', ''))
+    return float(m.group(0)) if m else None
+
+
+def parse_kaisai_header(text):
+    """ '2026年11月21日（土曜） 5回京都5日' -> dict(date, weekday, kai, racecourse, nichi) """
+    ret = {'date': to_iso_date(text)}
+    weekday = parse_weekday(text)
+    if weekday:
+        ret['weekday'] = weekday
+    # Strip the date part so that '21日' is not taken as nichi
+    rest = re.sub(r'\d{4}年\d{1,2}月\d{1,2}日', '', text)
+    ret.update(parse_kaisai_name(rest))
+    return ret
+
+
+def person(name, link=None):
+    """ Common shape for jockey / trainer: {'name', 'link', 'affiliation'}.
+    A trailing '(栗東)' / '（美浦）' in the name is moved to 'affiliation'. """
+    name = name.strip()
+    ret = {}
+    m = re.match(r'^(.*?)\s*[(（](美浦|栗東|地方|外国)[)）]$', name)
+    if m:
+        ret['name'] = m.group(1)
+        ret['affiliation'] = m.group(2)
+    else:
+        ret['name'] = name
+    if link is not None:
+        ret['link'] = link
+    return ret
+
+
+def normalize_coat(text):
+    """ '黒鹿毛' -> '黒鹿' (same notation as 出馬表) """
+    text = text.strip()
+    return text[:-1] if text.endswith('毛') and len(text) > 1 else text
+
+
 class Util:
     @classmethod
     def parse_int_only(cls, str):
@@ -280,9 +398,9 @@ class Util:
             time_str = cls.trim_clean(time_str)
             times = time_str.split(":")
             if len(times) > 1:
-                time_sec = int(times[0]) * 600 + int(float(times[1]) * 10)
+                time_sec = int(times[0]) * 600 + round(float(times[1]) * 10)
             else:
-                time_sec = int(float(times[0]) * 10)
+                time_sec = round(float(times[0]) * 10)
         except ValueError:
             logger.debug('Value error: {}'.format(time_str))
             raise UtilError
