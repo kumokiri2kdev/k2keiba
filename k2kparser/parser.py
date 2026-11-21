@@ -26,9 +26,22 @@ class ParseErrorHTTP(ParseError):
         self.code = code
 
 class Parser:
+    _base_url = None
+
+    @property
+    def default_base_url(self):
+        """ Base URL used when 'base_url' is not given. Override in subclasses. """
+        return JRA_BASE_URL
+
     @property
     def base_url(self):
-        return JRA_BASE_URL
+        if self._base_url is not None:
+            return self._base_url
+        return self.default_base_url
+
+    @base_url.setter
+    def base_url(self, value):
+        self._base_url = value
 
     @property
     def decoder(self):
