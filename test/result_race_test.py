@@ -21,15 +21,20 @@ if __name__ == '__main__':
         #'pw01sde1006201805011120181201/B2',  # 2018年ステイヤーズステークス(Issue#12)
         #'pw01sde1006201904051120190916/A4'
         #'pw01sde0107202101050220210116%2F52'
-        'pw01sde1004202203050320220827/E5'
+        'pw01sde1004202203050320220827/E5',
+        'pw01sde0108202605050320261121/F9'
+
     ]
 
+    # python result_race_test.py [CNAME ...]  (CNAME: the value after 'CNAME=' in the result page URL)
+    if len(sys.argv) > 1:
+        races = sys.argv[1:]
+
     for race in races:
-        p = pr.ParserResultRace('/JRADB/accessS.html', race)
+        p = pr.ParserResultRace('/JRADB/accessS.html', race, fetch_video=True)
         race = p.parse()
 
-        val = race['date']
-        #logger.info(val)
-        #logger.info(race)
         pprint.pprint(race)
+        logger.info('{} {} {}R videos: {}'.format(
+            race['date'], race['racecourse'], race['race_num'], race.get('videos', 'なし')))
 

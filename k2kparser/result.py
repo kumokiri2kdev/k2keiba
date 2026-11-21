@@ -8,6 +8,7 @@ import re
 from . import util
 from . import parser
 from . import den
+from . import video
 from .den import _onclick_link, _href_link, _race_num
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,19 @@ class ParserResultKaisai(parser.ParserPost):
 
 
 class ParserResultRace(parser.ParserPost):
+    def __init__(self, path, param, fetch_video=False, **kwargs):
+        """
+        :param fetch_video: True なら、レース映像・全周パトロールの HLS の URL も取得する
+                            （映像1本につき CDN へ2回アクセスする）
+        """
+        self.fetch_video = fetch_video
+        super().__init__(path, param, **kwargs)
+
+    def parse(self):
+        race = super().parse()
+        if getattr(self, 'fetch_video', False) and race.get('videos'):
+            video.resolve_videos(race['videos'])
+        return race
 
     def parse_payouts(self, soup_li):
         """ One bet type of the refund area -> list of dict(combination, payout, popularity) """
@@ -179,6 +193,9 @@ class ParserResultRace(parser.ParserPost):
             'last_furlongs': {'3F': int, '4F': int}
             'corner_orders': {'1': str, ...}
             'payouts': {券種: list of dict(combination, payout, popularity)}
+            'videos': {'race': レース映像, 'patrol': 全周パトロール}（ボタンがある場合）
+                'video_id'
+                'master_url', 'resolutions', 'duration'（fetch_video=True のとき）
         """
         soup_result = soup.find('div', attrs={'id': 'contentsBody'}).find('div', attrs={'class': 'race_result_unit'})
         race = den.parse_race_header(soup_result)
@@ -245,5 +262,10 @@ class ParserResultRace(parser.ParserPost):
                 if lines:
                     payouts[payout_type] = lines
             race['payouts'] = payouts
+
+        # 開催中は、映像のボタンが遅れて追加されることがある（ない場合はキーを省略）
+        videos = video.parse_video_ids(soup_result)
+        if videos:
+            race['videos'] = videos
 
         return race

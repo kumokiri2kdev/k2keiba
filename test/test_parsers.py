@@ -135,6 +135,11 @@ def test_result_race(parse):
     for horse in race['horses']:
         if horse['finish_position'] is None:
             assert horse['finish_status']
+    # 映像のボタンは遅れて追加されることがあるので、ある場合だけ確認する
+    for kind, entry in race.get('videos', {}).items():
+        assert kind in ('race', 'patrol')
+        assert set(entry) == {'video_id', 'contract_company_no'}   # parse_html だけでは CDN にアクセスしない
+        assert entry['video_id'].startswith(race['date'][:4])
 
 
 # ---- オッズ ----

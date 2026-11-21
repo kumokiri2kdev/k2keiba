@@ -87,6 +87,12 @@ k2kparser の各パーサーが返す dict のキー名・値の型をそろえ�
 | レーティング | `rating` | int | `99` | （新規） |
 | 1着馬・2着馬（馬ページ） | `winner`, `runner_up` | str | | `winner` |
 | 金額（円） | `payout`, `sales` など | int | | `price`, `pay_back`, `bet_price` |
+| 映像 | `videos` | dict | `{'race': …, 'patrol': …}` | （新規） |
+| 動画 ID | `video_id` | str | `'202605080504'`, `'202605080504a'` | （新規） |
+| 映像の配信元の番号 | `contract_company_no` | int | `1`, `2` | （新規。JRA のスクリプトの引数名に合わせた） |
+| HLS の URL | `master_url` | str | | （新規） |
+| 解像度 | `resolutions` | list of str | `['480x270', '854x480']` | （新規） |
+| 長さ（秒） | `duration` | int | `126` | （新規） |
 
 ## 券種
 

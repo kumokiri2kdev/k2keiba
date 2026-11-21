@@ -313,7 +313,11 @@ result.ParserResultKaisai(kaisai['link']['url'], kaisai['link']['param']).parse(
 
 ```python
 result.ParserResultRace(race['link']['url'], race['link']['param']).parse()
+result.ParserResultRace(race['link']['url'], race['link']['param'], fetch_video=True).parse()  # 映像の HLS も取得
 ```
+
+`fetch_video=True` を指定すると、レース映像と全周パトロールの HLS の URL も取得します（映像1本につき、配信 CDN へ2回アクセスします）。
+指定しない場合は、ページにある動画 ID だけを返します。
 
 [出馬表（1レース）のレースの情報](#出馬表1レース-parserdenrace) に加えて、次のキーがあります。
 
@@ -330,6 +334,18 @@ result.ParserResultRace(race['link']['url'], race['link']['param']).parse()
 | `payouts.<券種>[].combination` | str | ○ | 馬番の組み合わせ（`'13-15'`） |
 | `payouts.<券種>[].payout` | int | ○ | 払戻金（100円あたり） |
 | `payouts.<券種>[].popularity` | int | | 人気 |
+| `videos` | dict | | 映像 `{'race': レース映像, 'patrol': 全周パトロール}`（ボタンがある映像のみ） |
+| `videos.<種類>.video_id` | str | ○ | 動画 ID（パトロールは末尾に `a`） |
+| `videos.<種類>.contract_company_no` | int | ○ | 配信元の番号（1: 過去のレース、2: 最近のレース。ページのボタンから読み取る） |
+| `videos.<種類>.master_url` | str | | HLS マスタープレイリストの URL（`fetch_video=True` のとき） |
+| `videos.<種類>.resolutions` | list of str | | 解像度（`['480x270', '640x360', '854x480']`。`fetch_video=True` のとき） |
+| `videos.<種類>.duration` | int | | 長さ（秒。`fetch_video=True` のとき） |
+
+開催当日は、映像のボタンがレース確定より遅れて追加されることがあります。ボタンがまだないときは、`videos`（または `race` / `patrol`）が入りません。時間をおいて取り直してください。
+`fetch_video=True` でも、配信側の準備ができていない映像は `video_id` だけになります（ログに警告を出します）。
+
+動画 ID が分かっていれば、`k2kparser.video.get_hls(video_id, contract_company_no)` で HLS の情報だけを取得することもできます。
+配信元はレースの時期で分かれていて、番号を間違えると見つかりません（`VideoError`）。`contract_company_no` は、結果ページから読み取った値を渡してください。
 
 出走馬 `horses[]`:
 
@@ -362,7 +378,11 @@ result.ParserResultRace(race['link']['url'], race['link']['param']).parse()
  'payouts': {'win': [{'combination': '13', 'payout': 6340, 'popularity': 13}],
              'place': [{'combination': '13', 'payout': 1350, 'popularity': 13}, ...],
              'tierce': [{'combination': '13-15-4', 'payout': 701850, 'popularity': 1269}],
-             ...}}
+             ...},
+ 'videos': {'race': {'video_id': '202605080504', 'contract_company_no': 2,
+                     'master_url': 'https://eqc834rezx.eq.webcdn.stream.ne.jp/www50/eqc834rezx/jmc_pub/jmc_pd/00372/9b121242bc3c4460b743d9cb48ece2f5.m3u8',
+                     'resolutions': ['480x270', '640x360', '854x480'], 'duration': 126},
+            'patrol': {'video_id': '202605080504a', 'contract_company_no': 2, 'master_url': '...', 'resolutions': [...], 'duration': 129}}}
 ```
 
 ## WIN5 `ParserWin5Kaisai`
