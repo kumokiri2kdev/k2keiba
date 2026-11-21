@@ -11,7 +11,7 @@ class IPatParser(parser.Parser):
 
     @property
     def decoder(self):
-        return "'euc-jp'"
+        return 'euc-jp'
 
 
 if __name__ == '__main__':

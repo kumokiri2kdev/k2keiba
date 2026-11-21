@@ -32,7 +32,7 @@ class Parser:
 
     @property
     def decoder(self):
-        return "'Shift_JISx0213'"
+        return 'Shift_JISx0213'
 
     def __init__(self, file_path, **kwargs):
         if 'data' in kwargs:
@@ -69,16 +69,22 @@ class Parser:
             request = urllib.request.Request(self.uri, headers=headers)
 
         for i in range(HTTP_ERROR_RETRY):
+            is_last = i >= HTTP_ERROR_RETRY - 1
             try :
                 with urllib.request.urlopen(request) as response:
                     response_body = response.read().decode(self.decoder)
-                    break
+                break
             except urllib.error.HTTPError as e:
-                if i > HTTP_ERROR_RETRY:
+                if is_last:
+                    logger.error('HTTP Error {} : {}'.format(e.code, self.uri))
                     raise ParseErrorHTTP(e.code)
-                else:
-                    logger.info('HTTP Error Retry({})'.format(i + 1))
-                    time.sleep(1)
+                logger.info('HTTP Error {} Retry({})'.format(e.code, i + 1))
+            except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+                if is_last:
+                    logger.error('Connection Error {} : {}'.format(e, self.uri))
+                    raise ParseError
+                logger.info('Connection Error {} Retry({})'.format(e, i + 1))
+            time.sleep(1)
 
         json_data = self.parse_html(response_body)
 
@@ -91,10 +97,10 @@ class Parser:
 class ParserJson(Parser):
     @property
     def decoder(self):
-        return "'utf-8'"
+        return 'utf-8'
 
     def parse_html(self, content):
-        json_data = json.loads(content, encoding=self.decoder)
+        json_data = json.loads(content)
         return self.parse_content(json_data)
 
 
