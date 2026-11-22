@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='k2keiba',
-    version='0.2.0',
+    version='0.3.0',
     packages=['k2kparser', 'k2kvideo', 'k2kmcp', 'k2kodds'],
     install_requires=['beautifulsoup4', 'aiohttp'],
     extras_require={
