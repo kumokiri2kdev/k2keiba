@@ -29,7 +29,7 @@ races = den.ParserDenKaisai(kaisai['link']['url'], kaisai['link']['param']).pars
 
 非同期版の `aparse()` を使うと、複数のページを並行して取得できます（[docs/output.md](docs/output.md#並行して取得する非同期版)）。
 
-Claude Code や Claude Desktop から使う MCP サーバーもあります（[docs/mcp.md](docs/mcp.md)）。
+Claude Code・Claude Desktop・Codex・ChatGPT などから使う MCP サーバーもあります（[docs/mcp.md](docs/mcp.md)）。
 
 各パーサーの出力は [docs/output.md](docs/output.md)、キー名の規則は [docs/naming.md](docs/naming.md) を参照してください。
 
