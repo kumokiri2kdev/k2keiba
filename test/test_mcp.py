@@ -60,6 +60,7 @@ def call(monkeypatch):
         return asyncio.run(main())
 
     run.requested = requested
+    run.pages = pages
     return run
 
 
@@ -169,6 +170,28 @@ def test_compare_bets(call):
     assert len(out['finishes']) <= 5
     # the odds pages of the race are fetched once each (trio, umaren, tierce)
     assert len([k for k in call.requested if k[1] and k[1].startswith('pw15') and 'ou' in k[1]]) == 3
+
+
+def test_get_odds_past_race_via_result(call, monkeypatch):
+    """ A race not in this week's odds list: result page -> its odds_link -> the bet type's page """
+    race = parse_fixture('result_race')
+
+    async def not_this_week(self, date, racecourse, race_num, kind):
+        if kind == 'odds':
+            raise navigator.NotFound('JRA publishes odds only for this week.')
+        return await original(self, date, racecourse, race_num, kind)
+    original = navigator.Navigator.race_entry
+    monkeypatch.setattr(navigator.Navigator, 'race_entry', not_this_week)
+    # serve the saved win odds page (its odds_links lead to the other saved odds pages) at the result's odds_link
+    cname = race['odds_link']['param']
+    with open(os.path.join(FIXTURE_DIR, 'odds_tanpuku.html'), encoding='utf-8') as f:
+        call.pages[('/JRADB/accessO.html', cname)] = f.read()
+
+    r = call('get_odds', {'date': race['date'], 'racecourse': race['racecourse'], 'race_num': race['race_num'],
+                          'bet_type': 'trio', 'limit': 3})
+    assert not r.is_error, r.content[0].text
+    assert r.structured_content['returned'] == 3
+    assert ('/JRADB/accessO.html', cname) in call.requested
 
 
 def test_compare_bets_error(call):

@@ -27,6 +27,9 @@ ODDS_PARSERS = {
     'tierce': odds.OddsParserTierce,
 }
 
+# 5th character of an odds page parameter ('pw151ou...') -> bet type
+ODDS_TYPE_OF_DIGIT = {'1': 'win', '3': 'wakuren', '4': 'umaren', '5': 'wide', '6': 'umatan', '7': 'trio', '8': 'tierce'}
+
 # seconds
 TTL_THIS_WEEK = 300
 TTL_PAST = 24 * 3600
@@ -159,9 +162,11 @@ class Navigator:
                 racecourse, date))
 
         listed = ', '.join(d['date'] for d in days) or 'none'
-        what = 'race cards' if kind == 'den' else 'odds'
-        raise NotFound('JRA publishes {} only for this week. Dates available now: {}. '
-                       'For past races use the race result tools.'.format(what, listed))
+        if kind == 'den':
+            raise NotFound('JRA publishes race cards only for this week. Dates available now: {}. '
+                           'For past races use the race result tools.'.format(listed))
+        raise NotFound('No odds for {} on {}: this week has {}, and past races need published results.'.format(
+            racecourse, date, listed))
 
     # ---- races ----
 
@@ -195,13 +200,30 @@ class Navigator:
             return await result.ParserResultRace(link['url'], link['param'], fetch_video=True).aparse(self.client)
         return await self._page(result.ParserResultRace, link, TTL_PAST if _is_fixed(link) else TTL_THIS_WEEK)
 
-    async def odds(self, date, racecourse, race_num, bet_type):
-        race = await self.race_entry(date, racecourse, race_num, 'odds')
-        link = race.get('odds_links', {}).get(bet_type)
+    async def odds_links(self, date, racecourse, race_num):
+        """ {bet_type: link} of a race: from this week's odds list, or for past races from the result page
+        (its 'odds_link' opens an odds page, which links every bet type). """
+        try:
+            race = await self.race_entry(date, racecourse, race_num, 'odds')
+            return race.get('odds_links', {})
+        except NotFound as this_week:
+            try:
+                race = await self.race_result(date, racecourse, race_num)
+            except NotFound:
+                raise this_week
+        link = race.get('odds_link')
         if link is None:
-            raise NotFound('No {} odds for {}R. Available: {}'.format(
-                bet_type, race_num, ', '.join(race.get('odds_links', {})) or 'none'))
-        return await self._page(ODDS_PARSERS[bet_type], link, TTL_ODDS)
+            raise NotFound('No odds page is linked from the result of {}R.'.format(race_num))
+        page = await self._page(ODDS_PARSERS[ODDS_TYPE_OF_DIGIT.get(link['param'][4], 'win')], link, TTL_PAST)
+        return page.get('odds_links', {})
+
+    async def odds(self, date, racecourse, race_num, bet_type):
+        links = await self.odds_links(date, racecourse, race_num)
+        link = links.get(bet_type)
+        if link is None:
+            raise NotFound('No {} odds for {}R. Available: {}'.format(bet_type, race_num, ', '.join(links) or 'none'))
+        # odds of finished races ('pw15Xou1...') do not change any more
+        return await self._page(ODDS_PARSERS[bet_type], link, TTL_PAST if _is_fixed(link) else TTL_ODDS)
 
     async def odds_of_types(self, date, racecourse, race_num, bet_types):
         """ {bet_type: odds page} of several bet types, fetched in parallel """

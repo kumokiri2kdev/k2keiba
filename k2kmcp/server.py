@@ -22,7 +22,8 @@ Tools for JRA (Japan Racing Association) horse racing data, fetched live from ww
 
 - Dates are 'YYYY-MM-DD'. Racecourses are Japanese names (東京, 中山, 京都, 阪神, 中京, 新潟, 福島, 小倉, 札幌, 函館);
   romanized names (Tokyo, Kyoto, ...) are also accepted.
-- Race cards (出馬表) and odds are published only for this week's meetings. Call list_meetings first to see them.
+- Race cards (出馬表) are published only for this week's meetings. Call list_meetings first to see them.
+- Odds: current odds this week; for past races the final odds (確定オッズ) through the result page.
 - Race results are available for this week and for past dates (since 1986).
 - Times are in units of 0.1 second (693 = 1:09.3). Money is in yen.
 - Each call fetches pages from JRA; avoid calling the same tool repeatedly for the same data.
@@ -151,7 +152,7 @@ async def get_odds(
             description='Only combinations that include all of these horse numbers (枠番 for wakuren)')] = None,
         limit: Annotated[int, Field(ge=1, le=500, description='Max combinations to return, lowest odds first')] = 30,
 ) -> dict[str, Any]:
-    """Current odds of a race this week.
+    """Odds of a race: current odds this week, final odds (確定オッズ) for past races.
 
     win: win odds (単勝) and place odds range (複勝 min/max) of every horse.
     Other bet types: combinations sorted by odds (most popular first), limited to `limit`; use horse_nums to
@@ -213,7 +214,8 @@ async def compare_bets(
             description='Wide odds are a range; which end to use')] = 'min',
         table_size: Annotated[int, Field(ge=0, le=100, description='Max rows of the finish table')] = 20,
 ) -> dict[str, Any]:
-    """Compare ways of buying tickets for a race this week by hit probability and return, using the current odds.
+    """Compare ways of buying tickets for a race by hit probability and return, using the current odds this week
+    or the final odds of a past race (to review how other ways of buying would have compared).
 
     For each strategy: points, tickets with amounts, hit_probability, profit_probability (payout > spent),
     torigami_probability (hit but payout < spent), payout_when_hit / return_when_hit (min/median/max, return =
@@ -222,7 +224,7 @@ async def compare_bets(
     e.g. what is lost by dropping a horse. 'horses' gives each used horse's chance to win / be top 2 / top 3.
 
     Probabilities are the market's view read from the tierce (3連単) odds, not a prediction. Odds change until the
-    race starts, so payouts are estimates. Use the horse numbers from get_race_card.
+    race starts, so payouts are estimates for races not run yet. Use the horse numbers from get_race_card.
     """
     used = {bet.bet_type for s in strategies for bet in s.bets}
     needed = sorted(used | {'tierce'} | ({'win'} if 'wakuren' in used else set()))
