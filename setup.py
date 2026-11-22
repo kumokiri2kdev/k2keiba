@@ -2,11 +2,10 @@ from setuptools import setup
 
 setup(
     name='k2keiba',
-    version='0.3.0',
-    packages=['k2kparser', 'k2kvideo', 'k2kmcp', 'k2kodds'],
+    version='0.3.1',
+    packages=['k2kparser', 'k2kmcp', 'k2kodds'],
     install_requires=['beautifulsoup4', 'aiohttp'],
     extras_require={
-        'video': ['selenium'],      # k2kvideo only
         'mcp': ['mcp>=2,<3'],       # k2kmcp (MCP server)
         'test': ['pytest'],
     },

@@ -6,7 +6,6 @@ JRA のホームページから、出馬表・オッズ・レース結果・WIN5
 
 ```
 $ pip install -e .            # 開発用（コードの変更がすぐ反映される）
-$ pip install -e .[video]     # k2kvideo も使う場合（selenium）
 $ pip install -e .[test]      # テストも実行する場合（pytest）
 $ pip install -e .[mcp]       # MCP サーバーも使う場合
 ```
