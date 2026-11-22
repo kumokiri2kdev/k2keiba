@@ -14,7 +14,7 @@ setup(
         'console_scripts': ['k2keiba-mcp = k2kmcp.server:main'],
     },
     url='',
-    license='free',
+    license='MIT',
     author='kumokiri2k',
     author_email='',
     description='k2keiba JRA data parser'
