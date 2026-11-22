@@ -88,6 +88,10 @@ def test_list_tools():
     for tool in tools.values():
         assert tool.description
         assert tool.annotations.read_only_hint is True
+        # no $ref: some clients (e.g. Codex) may not resolve references
+        assert '$ref' not in json.dumps(tool.input_schema)
+    bet = tools['compare_bets'].input_schema['properties']['strategies']['items']['properties']['bets']['items']
+    assert {'bet_type', 'formation', 'box', 'combinations', 'amount'} <= set(bet['properties'])
 
 
 def test_list_meetings(call):

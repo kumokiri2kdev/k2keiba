@@ -27,6 +27,17 @@ Tools for JRA (Japan Racing Association) horse racing data, fetched live from ww
 - Race results are available for this week and for past dates (since 1986).
 - Times are in units of 0.1 second (693 = 1:09.3). Money is in yen.
 - Each call fetches pages from JRA; avoid calling the same tool repeatedly for the same data.
+
+Comparing ways of buying (馬券の買い方の比較):
+- When the user gives marks (本命 / 対抗 / 連下, or A, B, C ...) and a budget, or asks which bet type or which
+  horses to keep, use compare_bets. Do not compute odds, probabilities or payouts by hand.
+- Put the user's plan and its variations (drop one horse at a time, another bet type, allocation='payout')
+  in one call, up to 10 strategies with short unique names. Use horse numbers (馬番); check them with
+  get_race_card, or get_race_result for past races.
+- Report per strategy: points, hit probability, return when hit (min / median / max), torigami probability.
+  Use 'finishes' to explain what a variation gives up (e.g. the payout lost if a dropped horse comes in).
+- The probabilities are the market's view read from the odds, not a prediction; say so. For past races the
+  final odds are used, so the comparison shows how the choices looked before the race.
 """
 
 DateArg = Annotated[str, Field(description="Race date, 'YYYY-MM-DD'")]
@@ -283,6 +294,29 @@ async def get_horse(
     horse['races'] = races[:max_races]
     horse['total_races'] = sum(1 for r in races if r.get('type') == 'race')
     return horse
+
+
+def _inline_refs(schema):
+    """ Replace {'$ref': '#/$defs/Name'} with the definition itself and drop '$defs'.
+    Some MCP clients do not resolve $ref and leave such tools out. """
+    defs = schema.get('$defs', {})
+
+    def resolve(node):
+        if isinstance(node, list):
+            return [resolve(n) for n in node]
+        if not isinstance(node, dict):
+            return node
+        if '$ref' in node:
+            name = node['$ref'].rsplit('/', 1)[-1]
+            merged = {**defs[name], **{k: v for k, v in node.items() if k != '$ref'}}
+            return resolve(merged)
+        return {k: resolve(v) for k, v in node.items() if k != '$defs'}
+
+    return resolve(schema)
+
+
+for _tool in server._tool_manager.list_tools():     # SDK internals: the schema served by tools/list
+    _tool.parameters = _inline_refs(_tool.parameters)
 
 
 LOCAL_HOSTS = ('127.0.0.1', 'localhost', '::1')
