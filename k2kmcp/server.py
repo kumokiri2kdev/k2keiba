@@ -6,8 +6,9 @@ Run:  k2keiba-mcp             (stdio transport, for Claude Code / Claude Desktop
 import argparse
 from typing import Annotated, Any, Literal, Optional
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
+import k2kodds
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
@@ -171,6 +172,71 @@ async def get_odds(
     if 'votes' in page:
         out['votes'] = page['votes']
     return out
+
+
+# ---- comparing ways of buying (k2kodds) ----
+
+BetTypeArg = Literal['win', 'wakuren', 'umaren', 'wide', 'umatan', 'trio', 'tierce']
+
+
+class Bet(BaseModel):
+    """ One bet: give exactly one of formation, box or combinations. """
+    bet_type: BetTypeArg = Field(description='win = 単勝, wakuren = 枠連 (bracket numbers), umaren = 馬連, '
+                                             'wide = ワイド, umatan = 馬単, trio = 3連複, tierce = 3連単')
+    formation: Optional[list[list[int]]] = Field(None, description=(
+        'One list of horse numbers per position: [[1st], [2nd], [3rd]] for tierce/umatan. For trio/umaren/wide '
+        'the lists are groups, e.g. 軸1頭流し A-BC-BCDEF = [[A], [B, C], [B, C, D, E, F]]. win: [[A, B]]'))
+    box: Optional[list[int]] = Field(None, description='Box (ボックス): every combination of these horses')
+    combinations: Optional[list[str]] = Field(None, description="Explicit tickets, e.g. ['1-2-3', '1-2-5']")
+    amount: Optional[int] = Field(None, description='Fixed yen per ticket (multiple of 100); '
+                                                    'otherwise the budget is allocated')
+
+
+class Strategy(BaseModel):
+    name: str = Field(description="Short unique name, e.g. 'trio A-BC-BCDEF' or 'drop D'")
+    bets: list[Bet] = Field(description='Bets bought together (can mix bet types)')
+    allocation: Optional[Literal['equal', 'payout']] = Field(None, description='Overrides the allocation')
+
+
+@server.tool(annotations=READ_ONLY)
+async def compare_bets(
+        date: DateArg,
+        racecourse: RacecourseArg,
+        race_num: RaceNumArg,
+        strategies: Annotated[list[Strategy], Field(min_length=1, max_length=10, description=(
+            'Ways of buying to compare, e.g. a base plan and variations (drop a horse, umaren instead of trio)'))],
+        budget: Annotated[int, Field(ge=100, le=1000000, description='Yen per strategy')] = 3000,
+        allocation: Annotated[Literal['equal', 'payout'], Field(description=(
+            'equal = same amount per ticket; payout = more on low odds so that every hit pays about the same'
+        ))] = 'equal',
+        wide_odds: Annotated[Literal['min', 'max', 'mid'], Field(
+            description='Wide odds are a range; which end to use')] = 'min',
+        table_size: Annotated[int, Field(ge=0, le=100, description='Max rows of the finish table')] = 20,
+) -> dict[str, Any]:
+    """Compare ways of buying tickets for a race this week by hit probability and return, using the current odds.
+
+    For each strategy: points, tickets with amounts, hit_probability, profit_probability (payout > spent),
+    torigami_probability (hit but payout < spent), payout_when_hit / return_when_hit (min/median/max, return =
+    payout / spent) and market_return_rate (expected payout / spent under the market's probabilities; usually
+    about 0.7-0.8 because of the takeout). 'finishes' lists likely finishes with the payout of every strategy,
+    e.g. what is lost by dropping a horse. 'horses' gives each used horse's chance to win / be top 2 / top 3.
+
+    Probabilities are the market's view read from the tierce (3連単) odds, not a prediction. Odds change until the
+    race starts, so payouts are estimates. Use the horse numbers from get_race_card.
+    """
+    used = {bet.bet_type for s in strategies for bet in s.bets}
+    needed = sorted(used | {'tierce'} | ({'win'} if 'wakuren' in used else set()))
+    pages = await _call(navigator.odds_of_types(date, racecourse, race_num, needed))
+    odds = {t: page['odds'] for t, page in pages.items()}
+    try:
+        result = k2kodds.compare([s.model_dump(exclude_none=True) for s in strategies], odds, budget=budget,
+                                 allocation=allocation, wide=wide_odds, table_size=table_size)
+    except k2kodds.OddsError as e:
+        raise ToolError(str(e))
+    updated = [page['updated_at'] for page in pages.values() if page.get('updated_at')]
+    if updated:
+        result['odds_updated_at'] = max(updated)
+    return result
 
 
 # ---- results ----

@@ -83,7 +83,7 @@ def test_list_tools():
             return await client.list_tools()
     tools = {t.name: t for t in asyncio.run(main()).tools}
     assert set(tools) == {'list_meetings', 'get_track_conditions', 'list_races', 'get_race_card', 'get_odds',
-                          'get_race_result', 'search_horses', 'get_horse'}
+                          'get_race_result', 'search_horses', 'get_horse', 'compare_bets'}
     for tool in tools.values():
         assert tool.description
         assert tool.annotations.read_only_hint is True
@@ -150,6 +150,32 @@ def test_get_odds_wide(call):
     r = call('get_odds', {'date': date, 'racecourse': racecourse, 'race_num': race_num, 'bet_type': 'wide', 'limit': 3})
     assert not r.is_error
     assert {'combination', 'min', 'max'} == set(r.structured_content['odds'][0])
+
+
+def test_compare_bets(call):
+    date, racecourse, race_num = _odds_race()
+    win = parse_fixture('odds_tanpuku')['odds']
+    a, b, c, d = [h['horse_num'] for h in sorted(win, key=lambda h: h['win'] or 9999)][:4]
+    strategies = [
+        {'name': 'trio', 'bets': [{'bet_type': 'trio', 'formation': [[a], [b, c], [b, c, d]]}]},
+        {'name': 'umaren', 'bets': [{'bet_type': 'umaren', 'formation': [[a], [b, c]]}]},
+    ]
+    r = call('compare_bets', {'date': date, 'racecourse': racecourse, 'race_num': race_num,
+                              'strategies': strategies, 'table_size': 5})
+    assert not r.is_error, r.content[0].text
+    out = r.structured_content
+    assert out['probability_source'] == 'tierce odds'
+    assert [s['points'] for s in out['strategies']] == [3, 2]
+    assert len(out['finishes']) <= 5
+    # the odds pages of the race are fetched once each (trio, umaren, tierce)
+    assert len([k for k in call.requested if k[1] and k[1].startswith('pw15') and 'ou' in k[1]]) == 3
+
+
+def test_compare_bets_error(call):
+    date, racecourse, race_num = _odds_race()
+    r = call('compare_bets', {'date': date, 'racecourse': racecourse, 'race_num': race_num, 'budget': 100,
+                              'strategies': [{'name': 'x', 'bets': [{'bet_type': 'umaren', 'box': [1, 2, 3]}]}]})
+    assert r.is_error and 'not enough' in r.content[0].text
 
 
 def test_get_race_result(call):

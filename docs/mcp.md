@@ -120,6 +120,7 @@ ChatGPT では、設定の「アプリとコネクタ」→「詳細設定」で
 | `get_race_card` | 出馬表（枠番、馬番、`horse_id`、騎手、斤量、血統、馬体重、単勝オッズ・人気） | 今週 |
 | `get_odds` | オッズ（`bet_type`: `win`, `wakuren`, `umaren`, `wide`, `umatan`, `trio`, `tierce`） | 今週 |
 | `get_race_result` | レース結果（着順、タイム、上がり、通過順、払戻）。`include_video` で映像の HLS も取得 | 今週・過去（1986年〜） |
+| `compare_bets` | 買い方の比較（当たる確率、当たったときのリターン、決着ごとの払戻）。[k2kodds.md](k2kodds.md) | 今週 |
 | `search_horses` | 馬名での検索（カタカナ、前方一致） | — |
 | `get_horse` | 馬のプロフィールと過去の成績（`horse_id` で指定） | — |
 

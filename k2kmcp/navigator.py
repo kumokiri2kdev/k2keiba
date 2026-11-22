@@ -203,6 +203,11 @@ class Navigator:
                 bet_type, race_num, ', '.join(race.get('odds_links', {})) or 'none'))
         return await self._page(ODDS_PARSERS[bet_type], link, TTL_ODDS)
 
+    async def odds_of_types(self, date, racecourse, race_num, bet_types):
+        """ {bet_type: odds page} of several bet types, fetched in parallel """
+        pages = await asyncio.gather(*(self.odds(date, racecourse, race_num, t) for t in bet_types))
+        return dict(zip(bet_types, pages))
+
     # ---- horses ----
 
     async def horse(self, horse_id):
