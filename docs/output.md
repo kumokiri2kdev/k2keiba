@@ -381,6 +381,8 @@ result.ParserResultRace(race['link']['url'], race['link']['param'], fetch_video=
 `fetch_video=True` でも、配信側の準備ができていない映像は `video_id` だけになります（ログに警告を出します）。
 
 動画 ID が分かっていれば、`k2kparser.video.get_hls(video_id, contract_company_no)` で HLS の情報だけを取得することもできます。
+
+取得するのは、映像を再生するための URL です。映像には JRA などの著作権があります。ダウンロードして保存・配布・公開したり、ほかのサイトやサービスで配信したりすると、著作権の侵害になることがあります。私的な視聴の範囲で使ってください。
 配信元はレースの時期で分かれていて、番号を間違えると見つかりません（`VideoError`）。`contract_company_no` は、結果ページから読み取った値を渡してください。
 
 出走馬 `horses[]`:

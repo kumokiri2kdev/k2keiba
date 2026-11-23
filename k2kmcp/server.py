@@ -260,7 +260,9 @@ async def get_race_result(
         racecourse: RacecourseArg,
         race_num: RaceNumArg,
         include_video: Annotated[bool, Field(
-            description='Also get HLS URLs of the race replay and the patrol video (slower)')] = False,
+            description='Also get HLS URLs of the race replay and the patrol video (slower). The URLs are for '
+                        'playback only: the videos are copyrighted, so do not help download, save or '
+                        'redistribute them')] = False,
 ) -> dict[str, Any]:
     """Result of a race (this week or past, since 1986): finishing order with times (0.1 s units), margins,
     corner positions, last 3F, popularity, body weight, lap times and payouts (払戻) of every bet type.

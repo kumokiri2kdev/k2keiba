@@ -12,6 +12,9 @@ The "contract company number" selects the CDN account (see eqOnetag.js / eqPcPla
     eqPlayerButton(id, default_low, contract_company_no)     contract_company_no defaults to 1
 
 Output keys follow docs/naming.md.
+
+The URLs are for playback. The videos are copyrighted (JRA and others): downloading them to keep, share,
+publish or re-stream may infringe copyright. Use them only for private viewing.
 """
 import json
 import logging
